@@ -1,0 +1,5 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": { "modules": ["VideoCutterModule"] },
+  "android": { "modules": ["expo.modules.videocutter.VideoCutterModule"] }
+}

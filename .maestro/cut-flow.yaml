@@ -1,0 +1,66 @@
+appId: com.altixcode.jumpcut
+name: Cut the silence out of a clip
+---
+# The fixture is a 10s portrait clip whose phrases are separated by pauses of
+# about a second and a half. A clip of continuous speech would have nothing to
+# cut, and every assertion about the export would pass on a file the app never
+# touched.
+- launchApp:
+    clearState: false
+- takeScreenshot: artifacts/01-home
+
+- tapOn: "Choose a Video"
+# Anchor on the picker's own scroll view, not on visible text: a wait like
+# ".*Photos.*" is also satisfied by the app's own copy, so it passes instantly
+# and the tap below fires while the picker is still presenting.
+- extendedWaitUntil:
+    visible:
+      id: "photosView_content_scroll_view"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "Video, .*"
+    timeout: 25000
+# Let the grid finish laying out. The container carries the same accessibility
+# label as its cells and appears first, so waiting on the label alone returns
+# before any cell exists and the tap lands in empty space beside it.
+- waitForAnimationToEnd:
+    timeout: 8000
+- tapOn:
+    point: "64,206"
+
+# The loaded clip's own dimensions. A looser ".*Video.*" also matches the empty
+# state's "No Video Selected" and would pass with no clip at all.
+- extendedWaitUntil:
+    visible: ".*1080x1920.*"
+    timeout: 45000
+- takeScreenshot: artifacts/02-loaded
+
+- tapOn: "Find the Silences"
+# The results card only renders once segments exist, so this doubles as the
+# assertion that the detector found something.
+- extendedWaitUntil:
+    visible: "What JumpCut Found"
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: artifacts/03-found
+
+- scrollUntilVisible:
+    element:
+      text: "Cut and Save"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "Cut and Save"
+# Full read-and-write photo access, which iOS refuses without a prompt when
+# only add-access was requested.
+- runFlow:
+    when:
+      visible: ".*Allow Access to All Photos.*"
+    commands:
+      - tapOn: ".*Allow Access to All Photos.*"
+# Asserted by its own text. A loose ".*OK.*" also matches the denial alert, so
+# a refused save used to read as a pass in this suite.
+- extendedWaitUntil:
+    visible: "Saved!"
+    timeout: 300000
+- takeScreenshot: artifacts/04-saved

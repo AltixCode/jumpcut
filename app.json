@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "JumpCut",
+    "slug": "jumpcut",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "jumpcut",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.altixcode.jumpcut",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "JumpCut reads the video you choose so it can cut its silences. Nothing is uploaded.",
+        "NSPhotoLibraryAddUsageDescription": "JumpCut saves the cut video back to your photo library."
+      }
+    },
+    "android": {
+      "package": "com.altixcode.jumpcut",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-video",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "JumpCut reads the video you choose so it can cut its silences. Nothing is uploaded."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "JumpCut reads the video you choose so it can cut its silences.",
+          "savePhotosPermission": "JumpCut saves the cut video back to your photo library.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      "./plugins/withIOSSceneLifecycle",
+      "./plugins/withAndroidRtl"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

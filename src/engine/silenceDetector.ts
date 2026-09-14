@@ -31,7 +31,12 @@ export interface DetectOptions {
   minSegmentSeconds?: number;
 }
 
-const DEFAULTS: Required<DetectOptions> = {
+/**
+ * Exported so the UI can present the defaults as a chosen setting rather than
+ * an implicit one. A screen that hardcodes its own copy of these shows a
+ * sensitivity nothing is set to.
+ */
+export const DEFAULTS: Required<DetectOptions> = {
   thresholdDb: -35,
   minSilenceSeconds: 0.3,
   paddingSeconds: 0.04,
@@ -59,7 +64,10 @@ export const rmsToDb = (rms: number): number =>
  * `windowSeconds` is the duration each RMS sample covers.
  */
 export const findSilences = (
-  rmsWindows: number[],
+  // ArrayLike rather than number[]: the profile arrives as a Float32Array of
+  // one reading per 50 ms, and converting a few thousand of those into a JS
+  // array to read them once is work with no result.
+  rmsWindows: ArrayLike<number>,
   windowSeconds: number,
   options: DetectOptions = {},
 ): Interval[] => {
@@ -67,7 +75,8 @@ export const findSilences = (
   const silences: Interval[] = [];
   let runStart: number | null = null;
 
-  rmsWindows.forEach((rms, i) => {
+  for (let i = 0; i < rmsWindows.length; i += 1) {
+    const rms = rmsWindows[i];
     const quiet = rmsToDb(rms) < thresholdDb;
     if (quiet && runStart === null) runStart = i;
     if (!quiet && runStart !== null) {
@@ -76,7 +85,7 @@ export const findSilences = (
       if (end - start >= minSilenceSeconds) silences.push({ start, end });
       runStart = null;
     }
-  });
+  }
   // A silence running to the end of the file never sees a loud window to close
   // it, so it has to be closed explicitly or trailing dead air is kept.
   if (runStart !== null) {
