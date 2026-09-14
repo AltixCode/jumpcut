@@ -19,7 +19,22 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "JumpCut reads the video you choose so it can cut its silences. Nothing is uploaded.",
-        "NSPhotoLibraryAddUsageDescription": "JumpCut saves the cut video back to your photo library."
+        "NSPhotoLibraryAddUsageDescription": "JumpCut saves the cut video back to your photo library.",
+        "CFBundleLocalizations": [
+          "en",
+          "es",
+          "fr",
+          "de",
+          "ru",
+          "zh",
+          "ja",
+          "pt",
+          "ko",
+          "it",
+          "tr",
+          "el"
+        ],
+        "CFBundleDevelopmentRegion": "en"
       }
     },
     "android": {
@@ -51,7 +66,26 @@
         }
       ],
       "./plugins/withIOSSceneLifecycle",
-      "./plugins/withAndroidRtl"
+      "./plugins/withAndroidRtl",
+      [
+        "./plugins/withAndroidLocales",
+        {
+          "locales": [
+            "en",
+            "es",
+            "fr",
+            "de",
+            "ru",
+            "zh",
+            "ja",
+            "pt",
+            "ko",
+            "it",
+            "tr",
+            "el"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
