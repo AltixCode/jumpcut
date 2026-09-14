@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/drawable-v21/abc_dialog_material_background.xml",
+        "source": "expo.modules.videocutter.video-cutter-appcompat-1.7.0-22:/drawable-v21/abc_dialog_material_background.xml"
+    },
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/drawable-v21/notification_action_background.xml",
+        "source": "expo.modules.videocutter.video-cutter-core-1.17.0-18:/drawable-v21/notification_action_background.xml"
+    },
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/drawable-v21/abc_list_divider_material.xml",
+        "source": "expo.modules.videocutter.video-cutter-appcompat-1.7.0-22:/drawable-v21/abc_list_divider_material.xml"
+    },
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/drawable-v21/abc_edit_text_material.xml",
+        "source": "expo.modules.videocutter.video-cutter-appcompat-1.7.0-22:/drawable-v21/abc_edit_text_material.xml"
+    },
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/drawable-v21/abc_action_bar_item_background_material.xml",
+        "source": "expo.modules.videocutter.video-cutter-appcompat-1.7.0-22:/drawable-v21/abc_action_bar_item_background_material.xml"
+    },
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/drawable-v21/abc_btn_colored_material.xml",
+        "source": "expo.modules.videocutter.video-cutter-appcompat-1.7.0-22:/drawable-v21/abc_btn_colored_material.xml"
+    }
+]

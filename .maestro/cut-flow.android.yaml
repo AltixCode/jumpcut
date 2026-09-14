@@ -1,0 +1,57 @@
+appId: com.altixcode.jumpcut
+name: Cut the silence out of a clip (Android)
+---
+# Same contract as the iOS flow, against a different engine: the cut is a
+# MediaCodec decode and re-encode here rather than AVMutableComposition. One
+# passing says nothing about the other, so both are gated the same way -- by
+# listening to the exported file.
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: artifacts/android-01-home
+
+- tapOn: "Choose a Video"
+# Anchor on the picker's own chrome, not on text the app also has.
+- extendedWaitUntil:
+    visible: "Albums"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 6000
+# Tapped by the cell's own accessibility label, not by position. The picker
+# sheet opens to a height that depends on how many items it has to show, so a
+# fixed percentage lands on the first cell with a full library and on empty
+# space with a single one -- and a tap into empty space reports COMPLETED.
+# qa-emulator.sh clears every app's fixtures, so this matches exactly one cell.
+- tapOn: "Video taken on .*"
+
+- extendedWaitUntil:
+    visible: ".*1080x1920.*"
+    timeout: 45000
+- takeScreenshot: artifacts/android-02-loaded
+
+- tapOn: "Find the Silences"
+# The results card only renders once segments exist, so this doubles as the
+# assertion that the detector found something.
+- extendedWaitUntil:
+    visible: "What JumpCut Found"
+    timeout: 600000
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: artifacts/android-03-found
+
+- scrollUntilVisible:
+    element:
+      text: "Cut and Save"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "Cut and Save"
+- runFlow:
+    when:
+      visible: ".*(Allow|ALLOW).*"
+    commands:
+      - tapOn: ".*(Allow|ALLOW).*"
+- extendedWaitUntil:
+    visible: "Saved!"
+    timeout: 600000
+- takeScreenshot: artifacts/android-04-saved

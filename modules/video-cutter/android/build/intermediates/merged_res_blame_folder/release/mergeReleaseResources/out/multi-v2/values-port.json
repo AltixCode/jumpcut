@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "expo.modules.videocutter.video-cutter-release-3:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "/Volumes/ExtremePro/DevCaches/gradle/caches/9.3.1/transforms/5341f13a56b95de17d863a995f24ac80/transformed/appcompat-1.7.0/res/values-port/values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "expo.modules.videocutter.video-cutter-mergeReleaseResources-1:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "/Volumes/ExtremePro/DevCaches/gradle/caches/9.3.1/transforms/5341f13a56b95de17d863a995f24ac80/transformed/appcompat-1.7.0/res/values-port/values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}

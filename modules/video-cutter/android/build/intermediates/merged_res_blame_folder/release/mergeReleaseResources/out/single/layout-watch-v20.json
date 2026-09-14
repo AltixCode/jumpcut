@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/layout-watch-v20/abc_alert_dialog_title_material.xml",
+        "source": "expo.modules.videocutter.video-cutter-appcompat-1.7.0-22:/layout-watch-v20/abc_alert_dialog_title_material.xml"
+    },
+    {
+        "merged": "expo.modules.videocutter.video-cutter-release-3:/layout-watch-v20/abc_alert_dialog_button_bar_material.xml",
+        "source": "expo.modules.videocutter.video-cutter-appcompat-1.7.0-22:/layout-watch-v20/abc_alert_dialog_button_bar_material.xml"
+    }
+]
