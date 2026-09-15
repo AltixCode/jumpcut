@@ -290,17 +290,22 @@ jobs:
     # for ARM64 or macOS -- so that runner was unmatchable, not busy, and its
     # work directory had never held a job. Verified by running one there.
     #
-    # `Linux` without an architecture deliberately, so this matches BOTH the
-    # x64 Coolify box and the arm64 container on the Mac. Two runners rather
-    # than one, no single point of failure, and the load is split so neither
-    # host absorbs 44 builds' worth of disk on its own.
+    # `X64` is not optional, and this said `Linux` alone for one round to find
+    # out. On the arm64 Linux runner the build reached `Build Android APK &
+    # AAB` and failed there: the Android SDK's Linux build-tools (aapt2 and
+    # friends) are published for x86_64 only, so an arm64 Linux host installs
+    # the SDK happily and then cannot run it. The x64 box got through prebuild
+    # and into Gradle on the same commit.
+    #
+    # So this is one runner again, not two. That is a real single point of
+    # failure and the disk load is not split -- see the guards below.
     #
     # Nothing here is mac-specific: `setup-java` supplies the JDK on any
     # platform and `setup-android` installs the SDK. Asking for macOS put
     # Android in a queue with iOS for the only two machines that can sign an
     # IPA, and whenever the third Mac dropped out that was Android's entire
     # capacity too.
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runner == 'github-hosted' && 'ubuntu-24.04' || fromJSON('["self-hosted", "Linux"]') }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runner == 'github-hosted' && 'ubuntu-24.04' || fromJSON('["self-hosted", "Linux", "X64"]') }}
     outputs:
       app_name: ${{ steps.version.outputs.app_name }}
       app_version: ${{ steps.version.outputs.app_version }}
@@ -318,7 +323,9 @@ jobs:
         #
         # Failing a build costs a re-run. Failing this host costs the websites.
         run: |
-          free_gb=$(df -BG --output=avail / | tail -1 | tr -dc '0-9')
+          # `df --output` is GNU-only and the runner image may ship busybox df,
+          # where it fails and the guard silently measures nothing.
+          free_gb=$(df -PBG / | awk 'NR==2 {print $4}' | tr -dc '0-9')
           echo "free on this runner: ${free_gb}G"
           if [ "${free_gb:-0}" -lt 15 ]; then
             echo "::error::only ${free_gb}G free — refusing to build rather than risk the host"
@@ -512,7 +519,7 @@ jobs:
         if: always()
         run: |
           rm -rf node_modules android/app/build android/build build/output || true
-          echo "free after cleanup: $(df -BG --output=avail / | tail -1 | tr -dc '0-9')G"
+          echo "free after cleanup: $(df -PBG / | awk 'NR==2 {print $4}' | tr -dc '0-9')G"
 
   publish-release:
     name: Publish GitHub Release
