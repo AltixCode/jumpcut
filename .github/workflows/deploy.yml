@@ -281,18 +281,50 @@ jobs:
   build-android:
     name: Android Build & Package
     if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'android' }}
-    # macOS, not Linux. The only self-hosted `linux, x64` runner is the Coolify
-    # host, which is permanently busy serving deployments, so every Android job
-    # queued behind it indefinitely while three macOS runners sat idle. Nothing
-    # here needs Linux: `setup-java` supplies JDK 17 on any platform, and
-    # `setup-android` installs the SDK itself.
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runner == 'github-hosted' && 'ubuntu-24.04' || fromJSON('["self-hosted", "macOS", "ARM64"]') }}
+    # Any self-hosted Linux runner, of either architecture.
+    #
+    # This said "macOS, not Linux", on the grounds that the only linux/x64
+    # runner was the Coolify host and it was "permanently busy serving
+    # deployments". That was never true of our work: no job in any of the 44
+    # repos targeted `[self-hosted, Linux, X64]` -- every self-hosted job asked
+    # for ARM64 or macOS -- so that runner was unmatchable, not busy, and its
+    # work directory had never held a job. Verified by running one there.
+    #
+    # `Linux` without an architecture deliberately, so this matches BOTH the
+    # x64 Coolify box and the arm64 container on the Mac. Two runners rather
+    # than one, no single point of failure, and the load is split so neither
+    # host absorbs 44 builds' worth of disk on its own.
+    #
+    # Nothing here is mac-specific: `setup-java` supplies the JDK on any
+    # platform and `setup-android` installs the SDK. Asking for macOS put
+    # Android in a queue with iOS for the only two machines that can sign an
+    # IPA, and whenever the third Mac dropped out that was Android's entire
+    # capacity too.
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runner == 'github-hosted' && 'ubuntu-24.04' || fromJSON('["self-hosted", "Linux"]') }}
     outputs:
       app_name: ${{ steps.version.outputs.app_name }}
       app_version: ${{ steps.version.outputs.app_version }}
       app_build: ${{ steps.version.outputs.app_build }}
       tag_name: ${{ steps.version.outputs.tag_name }}
     steps:
+      - name: Refuse to build if the host is short of disk
+        # One of the two Linux runners shares a host with the production
+        # Coolify estate -- 36 containers -- and that host filled its own disk
+        # on 2026-09-13 and was stopped for it. A full disk 404s every site on
+        # it. Measured, one Android build consumes about 6 GB, most of it the
+        # SDK, which is then reused; what accumulates per repo afterwards is
+        # node_modules, and 44 of those would not fit. Hence this floor, and
+        # the cleanup at the end of the job.
+        #
+        # Failing a build costs a re-run. Failing this host costs the websites.
+        run: |
+          free_gb=$(df -BG --output=avail / | tail -1 | tr -dc '0-9')
+          echo "free on this runner: ${free_gb}G"
+          if [ "${free_gb:-0}" -lt 15 ]; then
+            echo "::error::only ${free_gb}G free — refusing to build rather than risk the host"
+            exit 1
+          fi
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -465,6 +497,22 @@ jobs:
             build/output/*.apk
             build/output/*.aab
           if-no-files-found: ignore
+
+      - name: Release the disk this build took
+        # `always()`, because a build that failed has already written the
+        # node_modules and the Gradle output -- skipping cleanup on failure
+        # would mean the repos that fill the disk are exactly the ones that
+        # never cleaned up after themselves.
+        #
+        # node_modules is ~1 GB per repo and the runner keeps one workspace per
+        # repo, so 44 of them is more than this host has. The Android SDK and
+        # the Gradle wrapper caches are deliberately NOT removed: they live
+        # outside the workspace, are shared by every repo, and re-downloading
+        # them each time would cost far more than it saves.
+        if: always()
+        run: |
+          rm -rf node_modules android/app/build android/build build/output || true
+          echo "free after cleanup: $(df -BG --output=avail / | tail -1 | tr -dc '0-9')G"
 
   publish-release:
     name: Publish GitHub Release
