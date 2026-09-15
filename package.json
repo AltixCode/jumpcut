@@ -10,7 +10,7 @@
     "test": "jest",
     "export:ios": "expo export --platform ios",
     "export:android": "expo export --platform android",
-    "check:release": "node scripts/check-ad-wiring.mjs && tsx scripts/check-release-config.ts"
+    "check:release": "node scripts/check-paywall-copy.mjs && node scripts/check-locale-scripts.mjs && node scripts/check-ad-wiring.mjs && tsx scripts/check-release-config.ts"
   },
   "dependencies": {
     "expo": "~57.0.22",
