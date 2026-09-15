@@ -256,7 +256,13 @@ jobs:
           : "${APP_STORE_CONNECT_API_KEY_CONTENT:?Missing APP_STORE_CONNECT_API_KEY_CONTENT}"
           : "${APP_STORE_CONNECT_API_KEY_ID:?Missing APP_STORE_CONNECT_API_KEY_ID}"
           : "${APP_STORE_CONNECT_API_KEY_ISSUER:?Missing APP_STORE_CONNECT_API_KEY_ISSUER}"
-          API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+          # altool does NOT accept a path to the key. Given --apiKey it searches
+          # four fixed directories and nowhere else:
+          #   ./private_keys, ~/private_keys, ~/.private_keys, ~/.appstoreconnect/private_keys
+          # Writing it to $RUNNER_TEMP fails with "Failed to load AuthKey file. (-43)".
+          API_KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          mkdir -p "$API_KEY_DIR"
+          API_KEY_PATH="$API_KEY_DIR/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
           printf '%s' "$APP_STORE_CONNECT_API_KEY_CONTENT" > "$API_KEY_PATH"
           chmod 600 "$API_KEY_PATH"
           TARGET_IPA=$(find build/output -name "*.ipa" 2>/dev/null | head -n 1)
