@@ -14,9 +14,9 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
  */
 
 const IOS_ADMOB_APP_ID =
-  process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID ?? 'ca-app-pub-3940256099942544~1458002511';
+  process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID || 'ca-app-pub-3940256099942544~1458002511';
 const ANDROID_ADMOB_APP_ID =
-  process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID ?? 'ca-app-pub-3940256099942544~3347511713';
+  process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 
 /**
  * Why the app asks for tracking at all, in the user's words. Apple rejects a prompt whose
