@@ -185,8 +185,6 @@ jobs:
               -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
               -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER" \
               COMPILER_INDEX_STORE_ENABLE=NO \
-              CODE_SIGN_STYLE=Automatic \
-              CODE_SIGN_IDENTITY="Apple Distribution" \
               DEVELOPMENT_TEAM="8Q8Y559285"
           else
             echo "Archiving with local signing..."
@@ -198,8 +196,6 @@ jobs:
               -archivePath "build/${SCHEME}.xcarchive" \
               -derivedDataPath "build/DerivedData" \
               COMPILER_INDEX_STORE_ENABLE=NO \
-              CODE_SIGN_STYLE=Automatic \
-              CODE_SIGN_IDENTITY="Apple Distribution" \
               DEVELOPMENT_TEAM="8Q8Y559285"
           fi
 
