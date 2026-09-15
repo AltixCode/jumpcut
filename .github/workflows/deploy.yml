@@ -449,7 +449,12 @@ jobs:
           releaseFiles: build/output/${{ steps.version.outputs.app_name }}-${{ steps.version.outputs.app_version }}.aab
           track: internal
           status: completed
-          changesNotSentForReview: true
+          # Must be false until the app has been published once. Play answers
+          # "Changes are sent for review automatically. The query parameter
+          # changesNotSentForReview must not be set." and fails the whole
+          # Android job *after* the AAB has already uploaded successfully —
+          # so it reads like an upload failure when the upload worked.
+          changesNotSentForReview: false
           releaseName: ${{ steps.version.outputs.app_name }} ${{ steps.version.outputs.app_version }}
 
       - name: Stash Android Artifacts
