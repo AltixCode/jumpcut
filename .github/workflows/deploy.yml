@@ -1,0 +1,585 @@
+name: Build, Release & Store Submission Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target Platform'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+      submit_to_stores:
+        description: 'Automatically submit to TestFlight / Play Store'
+        required: true
+        default: true
+        type: boolean
+      ios_runner:
+        description: 'iOS runner (self-hosted first; hosted is backup)'
+        required: true
+        default: 'self-hosted'
+        type: choice
+        options: [self-hosted, github-hosted]
+      android_runner:
+        description: 'Android runner (self-hosted first; hosted is backup)'
+        required: true
+        default: 'self-hosted'
+        type: choice
+        options: [self-hosted, github-hosted]
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+
+# The AdMob and RevenueCat identifiers the build bakes in. Absent, the app falls back to
+# Google's test ad units and earns nothing, which nothing else in this pipeline notices.
+env:
+  EXPO_PUBLIC_ADMOB_IOS_APP_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_IOS_APP_ID }}
+  EXPO_PUBLIC_ADMOB_ANDROID_APP_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID }}
+  EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL: ${{ secrets.EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL }}
+  EXPO_PUBLIC_ADMOB_ANDROID_INTERSTITIAL: ${{ secrets.EXPO_PUBLIC_ADMOB_ANDROID_INTERSTITIAL }}
+  EXPO_PUBLIC_ADMOB_IOS_BANNER: ${{ secrets.EXPO_PUBLIC_ADMOB_IOS_BANNER }}
+  EXPO_PUBLIC_ADMOB_ANDROID_BANNER: ${{ secrets.EXPO_PUBLIC_ADMOB_ANDROID_BANNER }}
+  EXPO_PUBLIC_REVENUECAT_IOS_KEY: ${{ secrets.EXPO_PUBLIC_REVENUECAT_IOS_KEY }}
+  EXPO_PUBLIC_REVENUECAT_ANDROID_KEY: ${{ secrets.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY }}
+
+jobs:
+  build-ios:
+    name: iOS Build & Package
+    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'ios' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.ios_runner == 'github-hosted' && 'macos-14' || fromJSON('["self-hosted", "macOS", "ARM64", "ios-signing"]') }}
+    outputs:
+      app_name: ${{ steps.version.outputs.app_name }}
+      app_version: ${{ steps.version.outputs.app_version }}
+      app_build: ${{ steps.version.outputs.app_build }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clean Workspace
+        run: rm -rf build ios android
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        # An Expo tree is ~50k files and the runner's default descriptor limit
+        # is 256. `npm ci` dies partway with `ENFILE: Cannot cd into ...` and
+        # names a random package, which reads like a broken dependency rather
+        # than an exhausted process limit.
+        run: |
+          ulimit -n 8192
+          npm ci --legacy-peer-deps
+
+
+      - name: Verify Release Identifiers
+
+        run: npm run check:release
+
+      - name: Compute Dynamic Version & Bump app.json
+        id: version
+        run: |
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          APP_NAME=$(node -e "console.log(require('./app.json').expo.name)")
+          APP_VERSION="1.0.$COMMIT_COUNT"
+          APP_BUILD="$COMMIT_COUNT"
+          TAG_NAME="v$APP_VERSION"
+
+          echo "Computed Version: $APP_NAME $APP_VERSION (Build $APP_BUILD, Tag $TAG_NAME)"
+          echo "app_name=$APP_NAME" >> "$GITHUB_OUTPUT"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "app_build=$APP_BUILD" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "APP_BUILD=$APP_BUILD" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
+          node -e '
+            const fs = require("fs");
+            const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            app.expo.version = "'"$APP_VERSION"'";
+            app.expo.ios = app.expo.ios || {};
+            app.expo.ios.buildNumber = "'"$APP_BUILD"'";
+            app.expo.android = app.expo.android || {};
+            app.expo.android.versionCode = parseInt("'"$APP_BUILD"'", 10);
+            fs.writeFileSync("app.json", JSON.stringify(app, null, 2));
+            console.log("Updated app.json to version", app.expo.version, "build", app.expo.ios.buildNumber);
+          '
+
+      - name: Expo Prebuild iOS
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build & Export Signed iOS IPA
+        env:
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          mkdir -p build/output
+          SCHEME=$(ls ios | grep .xcodeproj | head -n 1 | sed 's/.xcodeproj//')
+          echo "Building iOS Scheme: $SCHEME"
+
+          : "${APP_STORE_CONNECT_API_KEY_CONTENT:?Missing APP_STORE_CONNECT_API_KEY_CONTENT}"
+          : "${APP_STORE_CONNECT_API_KEY_ID:?Missing APP_STORE_CONNECT_API_KEY_ID}"
+          : "${APP_STORE_CONNECT_API_KEY_ISSUER:?Missing APP_STORE_CONNECT_API_KEY_ISSUER}"
+
+          # A self-hosted runner started by launchd does not inherit the
+          # interactive session's keychain access, so `codesign` fails with
+          # `errSecInternalComponent` -- a message that names neither the
+          # keychain nor the key, and which looks like a broken certificate.
+          # Unlocking it and widening the partition list is what lets codesign
+          # use the private key without a UI prompt nobody is there to answer.
+          #
+          # Skipped when the secret is absent, so a runner whose keychain is
+          # already reachable is unaffected.
+          if [ -n "${MACOS_KEYCHAIN_PASSWORD:-}" ]; then
+            KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
+            security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN"
+            security set-key-partition-list -S apple-tool:,apple:,codesign: \
+              -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null 2>&1 || true
+            echo "Keychain unlocked for codesign."
+          else
+            echo "::warning::MACOS_KEYCHAIN_PASSWORD is not set. If this archive fails with errSecInternalComponent, that is why."
+          fi
+          AUTH_KEY="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+          printf '%s' "$APP_STORE_CONNECT_API_KEY_CONTENT" > "$AUTH_KEY"
+          chmod 600 "$AUTH_KEY"
+          if [ -f "$AUTH_KEY" ]; then
+            echo "Archiving with App Store Connect API Key..."
+            xcodebuild archive \
+              -workspace "ios/${SCHEME}.xcworkspace" \
+              -scheme "$SCHEME" \
+              -configuration Release \
+              -destination "generic/platform=iOS" \
+              -archivePath "build/${SCHEME}.xcarchive" \
+              -derivedDataPath "build/DerivedData" \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$AUTH_KEY" \
+              -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
+              -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER" \
+              COMPILER_INDEX_STORE_ENABLE=NO \
+              CODE_SIGN_STYLE=Automatic \
+              CODE_SIGN_IDENTITY="Apple Distribution" \
+              DEVELOPMENT_TEAM="8Q8Y559285"
+          else
+            echo "Archiving with local signing..."
+            xcodebuild archive \
+              -workspace "ios/${SCHEME}.xcworkspace" \
+              -scheme "$SCHEME" \
+              -configuration Release \
+              -destination "generic/platform=iOS" \
+              -archivePath "build/${SCHEME}.xcarchive" \
+              -derivedDataPath "build/DerivedData" \
+              COMPILER_INDEX_STORE_ENABLE=NO \
+              CODE_SIGN_STYLE=Automatic \
+              CODE_SIGN_IDENTITY="Apple Distribution" \
+              DEVELOPMENT_TEAM="8Q8Y559285"
+          fi
+
+          cat << 'PLIST_EOF' > build/exportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>teamID</key>
+              <string>8Q8Y559285</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>destination</key>
+              <string>export</string>
+          </dict>
+          </plist>
+          PLIST_EOF
+
+          if [ -f "$AUTH_KEY" ]; then
+            xcodebuild -exportArchive \
+              -archivePath "build/${SCHEME}.xcarchive" \
+              -exportPath "build/output" \
+              -exportOptionsPlist "build/exportOptions.plist" \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$AUTH_KEY" \
+              -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
+              -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER"
+          else
+            xcodebuild -exportArchive \
+              -archivePath "build/${SCHEME}.xcarchive" \
+              -exportPath "build/output" \
+              -exportOptionsPlist "build/exportOptions.plist"
+          fi
+
+          RAW_IPA=$(find build/output -name "*.ipa" 2>/dev/null | head -n 1)
+          if [ -n "$RAW_IPA" ] && [ -f "$RAW_IPA" ]; then
+            cp "$RAW_IPA" "build/output/${APP_NAME}-${APP_VERSION}.ipa"
+            echo "Successfully generated IPA at build/output/${APP_NAME}-${APP_VERSION}.ipa"
+          else
+            echo "::error::No IPA generated in build/output"
+            exit 1
+          fi
+
+      - name: Upload to TestFlight
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.submit_to_stores == true) || vars.ENABLE_STORE_UPLOADS == 'true' }}
+        env:
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          : "${APP_STORE_CONNECT_API_KEY_CONTENT:?Missing APP_STORE_CONNECT_API_KEY_CONTENT}"
+          : "${APP_STORE_CONNECT_API_KEY_ID:?Missing APP_STORE_CONNECT_API_KEY_ID}"
+          : "${APP_STORE_CONNECT_API_KEY_ISSUER:?Missing APP_STORE_CONNECT_API_KEY_ISSUER}"
+          API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+          printf '%s' "$APP_STORE_CONNECT_API_KEY_CONTENT" > "$API_KEY_PATH"
+          chmod 600 "$API_KEY_PATH"
+          TARGET_IPA=$(find build/output -name "*.ipa" 2>/dev/null | head -n 1)
+          [ -n "$TARGET_IPA" ] && [ -f "$TARGET_IPA" ] || { echo "::error::IPA missing"; exit 1; }
+          xcrun altool --upload-app -f "$TARGET_IPA" -t ios \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_KEY_ISSUER"
+
+      - name: Stash iOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-artifacts
+          path: build/output/*.ipa
+          if-no-files-found: ignore
+
+  build-android:
+    name: Android Build & Package
+    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'android' }}
+    # macOS, not Linux. The only self-hosted `linux, x64` runner is the Coolify
+    # host, which is permanently busy serving deployments, so every Android job
+    # queued behind it indefinitely while three macOS runners sat idle. Nothing
+    # here needs Linux: `setup-java` supplies JDK 17 on any platform, and
+    # `setup-android` installs the SDK itself.
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runner == 'github-hosted' && 'ubuntu-24.04' || fromJSON('["self-hosted", "macOS", "ARM64"]') }}
+    outputs:
+      app_name: ${{ steps.version.outputs.app_name }}
+      app_version: ${{ steps.version.outputs.app_version }}
+      app_build: ${{ steps.version.outputs.app_build }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clean Workspace
+        run: rm -rf build ios android
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        # An Expo tree is ~50k files and the runner's default descriptor limit
+        # is 256. `npm ci` dies partway with `ENFILE: Cannot cd into ...` and
+        # names a random package, which reads like a broken dependency rather
+        # than an exhausted process limit.
+        run: |
+          ulimit -n 8192
+          npm ci --legacy-peer-deps
+
+
+      - name: Verify Release Identifiers
+
+        run: npm run check:release
+
+      - name: Compute Dynamic Version & Bump app.json
+        id: version
+        run: |
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          APP_NAME=$(node -e "console.log(require('./app.json').expo.name)")
+          APP_VERSION="1.0.$COMMIT_COUNT"
+          APP_BUILD="$COMMIT_COUNT"
+          TAG_NAME="v$APP_VERSION"
+
+          echo "Computed Version: $APP_NAME $APP_VERSION (Build $APP_BUILD, Tag $TAG_NAME)"
+          echo "app_name=$APP_NAME" >> "$GITHUB_OUTPUT"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "app_build=$APP_BUILD" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "APP_BUILD=$APP_BUILD" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
+          node -e '
+            const fs = require("fs");
+            const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            app.expo.version = "'"$APP_VERSION"'";
+            app.expo.ios = app.expo.ios || {};
+            app.expo.ios.buildNumber = "'"$APP_BUILD"'";
+            app.expo.android = app.expo.android || {};
+            app.expo.android.versionCode = parseInt("'"$APP_BUILD"'", 10);
+            fs.writeFileSync("app.json", JSON.stringify(app, null, 2));
+            console.log("Updated app.json to version", app.expo.version, "build", app.expo.android.versionCode);
+          '
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          # The action's default package set still includes `tools`, which
+          # Google removed from the SDK repository. sdkmanager answers
+          # "Failed to find package 'tools'" and exits 1 before anything this
+          # build needs is installed. The real packages are installed by the
+          # next step.
+          packages: ''
+
+      - name: Install Android build tools
+        run: |
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.1.12297006"
+
+      - name: Configure Android release signing
+        env:
+          APP_KEYSTORE_BASE64: ${{ secrets.APP_KEYSTORE_BASE64 }}
+          APP_KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
+          APP_KEYSTORE_ALIAS: ${{ secrets.APP_KEYSTORE_ALIAS }}
+          APP_KEY_PASSWORD: ${{ secrets.APP_KEY_PASSWORD }}
+        run: |
+          : "${APP_KEYSTORE_BASE64:?Missing APP_KEYSTORE_BASE64}"
+          : "${APP_KEYSTORE_PASSWORD:?Missing APP_KEYSTORE_PASSWORD}"
+          : "${APP_KEYSTORE_ALIAS:?Missing APP_KEYSTORE_ALIAS}"
+          : "${APP_KEY_PASSWORD:?Missing APP_KEY_PASSWORD}"
+          KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
+          printf '%s' "$APP_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$APP_KEYSTORE_PASSWORD" -alias "$APP_KEYSTORE_ALIAS" >/dev/null
+          {
+            echo "KEYSTORE_PATH=$KEYSTORE_PATH"
+            echo "KEYSTORE_PASSWORD=$APP_KEYSTORE_PASSWORD"
+            echo "KEY_ALIAS=$APP_KEYSTORE_ALIAS"
+            echo "KEY_PASSWORD=$APP_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Expo Prebuild Android
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Build Android APK & AAB
+        run: |
+          mkdir -p build/output
+          cd android
+          # `--no-daemon` and a worker cap, because the failure this replaces was
+          # "Gradle build daemon disappeared unexpectedly": the daemon JVM was
+          # being killed outright. Two macOS runners now share this machine with
+          # local Xcode builds, and `org.gradle.parallel=true` against four ABIs
+          # starts more native compilers than the box has memory for. A daemon is
+          # worthless in CI anyway -- nothing reuses it -- and its disappearance
+          # is reported as a Gradle bug rather than as memory pressure.
+          echo "Building Release APK..."
+          ./gradlew assembleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false \
+            "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
+            "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
+            "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
+            "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
+          echo "Building Release AAB Bundle..."
+          ./gradlew bundleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false \
+            "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
+            "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
+            "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
+            "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
+          cd ..
+
+          RAW_APK=$(find android/app/build/outputs/apk -name "*release*.apk" 2>/dev/null | head -n 1)
+          if [ -n "$RAW_APK" ] && [ -f "$RAW_APK" ]; then
+            cp "$RAW_APK" "build/output/${APP_NAME}-${APP_VERSION}.apk"
+            echo "Successfully generated APK at build/output/${APP_NAME}-${APP_VERSION}.apk"
+          else
+            echo "::error::Release APK was not produced"
+            exit 1
+          fi
+
+          RAW_AAB=$(find android/app/build/outputs/bundle -name "*.aab" 2>/dev/null | head -n 1)
+          if [ -n "$RAW_AAB" ] && [ -f "$RAW_AAB" ]; then
+            cp "$RAW_AAB" "build/output/${APP_NAME}-${APP_VERSION}.aab"
+            echo "Successfully generated AAB at build/output/${APP_NAME}-${APP_VERSION}.aab"
+          else
+            echo "::error::Release AAB was not produced"
+            exit 1
+          fi
+
+      - name: Upload to Google Play Store
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.submit_to_stores == true) || vars.ENABLE_STORE_UPLOADS == 'true' }}
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.altixcode.jumpcut
+          releaseFiles: build/output/${{ steps.version.outputs.app_name }}-${{ steps.version.outputs.app_version }}.aab
+          track: internal
+          status: completed
+          changesNotSentForReview: true
+          releaseName: ${{ steps.version.outputs.app_name }} ${{ steps.version.outputs.app_version }}
+
+      - name: Stash Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-artifacts
+          path: |
+            build/output/*.apk
+            build/output/*.aab
+          if-no-files-found: ignore
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-ios, build-android]
+    if: always() && (needs.build-ios.result == 'success' || needs.build-android.result == 'success')
+    # Same starved-runner reason as the Android job above.
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Stashed Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build/downloaded
+
+      - name: Prepare Release Packages & Checksums
+        id: prep
+        run: |
+          mkdir -p build/output
+          find build/downloaded -type f \( -name "*.ipa" -o -name "*.apk" -o -name "*.aab" \) -exec cp {} build/output/ \;
+
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          APP_NAME=$(node -e "console.log(require('./app.json').expo.name)")
+          APP_VERSION="1.0.$COMMIT_COUNT"
+          APP_BUILD="$COMMIT_COUNT"
+          TAG_NAME="v$APP_VERSION"
+
+          cd build/output
+          shasum -a 256 *.ipa *.apk *.aab > SHA256SUMS.txt 2>/dev/null || true
+          cd ../..
+
+          CHANGELOG=$(git log --pretty=format:"* %s (%h)" -n 12)
+          REPO="${{ github.repository }}"
+
+          cat << EOF > RELEASE_NOTES.md
+          ## 🚀 ${APP_NAME} ${TAG_NAME} (Build ${APP_BUILD})
+
+          ### 📦 Direct Download Packages
+          | Package | Description | Target Platform / Architecture | Direct Download Link |
+          |:---|:---|:---|:---|
+          EOF
+
+          if [ -f "build/output/${APP_NAME}-${APP_VERSION}.ipa" ]; then
+            echo "| **\`${APP_NAME}-${APP_VERSION}.ipa\`** | Signed iOS Application Archive | iOS 15.0+ (TestFlight / Sideloading / AltStore) | [Download ${APP_NAME}-${APP_VERSION}.ipa](https://github.com/${REPO}/releases/download/${TAG_NAME}/${APP_NAME}-${APP_VERSION}.ipa) |" >> RELEASE_NOTES.md
+          fi
+
+          if [ -f "build/output/${APP_NAME}-${APP_VERSION}.apk" ]; then
+            echo "| **\`${APP_NAME}-${APP_VERSION}.apk\`** | Standalone Universal APK (Recommended) | All Android Devices | [Download ${APP_NAME}-${APP_VERSION}.apk](https://github.com/${REPO}/releases/download/${TAG_NAME}/${APP_NAME}-${APP_VERSION}.apk) |" >> RELEASE_NOTES.md
+          fi
+
+          if [ -f "build/output/${APP_NAME}-${APP_VERSION}.aab" ]; then
+            echo "| **\`${APP_NAME}-${APP_VERSION}.aab\`** | Google Play App Bundle | Android Play Store Distribution | [Download ${APP_NAME}-${APP_VERSION}.aab](https://github.com/${REPO}/releases/download/${TAG_NAME}/${APP_NAME}-${APP_VERSION}.aab) |" >> RELEASE_NOTES.md
+          fi
+
+          cat << EOF >> RELEASE_NOTES.md
+
+          ### 🛡️ Privacy & Architecture Highlights
+          - **100% On-Device Processing**: No cloud servers, no remote accounts, and zero telemetry.
+          - **Anti-Subscription Promise**: Single lifetime non-consumable license. Own it forever with zero recurring fees.
+          - **12-Language Support**: Fully localized in English, Spanish, French, German, Russian, Chinese, Japanese, Portuguese, Korean, Italian, Turkish, and Arabic.
+
+          ### 📝 Recent Changes
+          ${CHANGELOG}
+
+          ### 🔒 Binary Integrity (SHA-256)
+          \`\`\`text
+          $(cat build/output/SHA256SUMS.txt 2>/dev/null || echo "No checksums generated")
+          \`\`\`
+          EOF
+
+          # Clean leading spaces in RELEASE_NOTES.md lines
+          sed -i -e 's/^[ \t]*##/##/' RELEASE_NOTES.md
+          sed -i -e 's/^[ \t]*###/###/' RELEASE_NOTES.md
+          sed -i -e 's/^[ \t]*- /- /' RELEASE_NOTES.md
+
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "APP_BUILD=$APP_BUILD" >> $GITHUB_ENV
+
+      - name: Publish to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          command -v gh >/dev/null 2>&1 || brew install gh
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists - updating notes and assets."
+            gh release edit "$TAG_NAME" \
+              --title "${APP_NAME} ${TAG_NAME} (Build ${APP_BUILD})" \
+              --notes-file RELEASE_NOTES.md \
+              --draft=false \
+              --prerelease=false \
+              --latest
+          else
+            echo "Creating release $TAG_NAME."
+            gh release create "$TAG_NAME" \
+              --title "${APP_NAME} ${TAG_NAME} (Build ${APP_BUILD})" \
+              --notes-file RELEASE_NOTES.md \
+              --target "${{ github.sha }}" \
+              --latest
+          fi
+
+          FILES=()
+          for f in build/output/*.ipa build/output/*.apk build/output/*.aab build/output/SHA256SUMS.txt; do
+            if [ -f "$f" ]; then
+              FILES+=("$f")
+            fi
+          done
+
+          if [ ${#FILES[@]} -gt 0 ]; then
+            echo "Uploading ${#FILES[@]} artifacts to release $TAG_NAME..."
+            gh release upload "$TAG_NAME" "${FILES[@]}" --clobber
+          else
+            echo "Warning: No release artifacts found to upload."
+          fi
+
+      - name: Tag Git Commit
+        run: |
+          if ! git ls-remote --exit-code origin "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          fi
