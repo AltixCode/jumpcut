@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "export:ios": "expo export --platform ios",
-    "export:android": "expo export --platform android"
+    "export:android": "expo export --platform android",
+    "check:release": "tsx scripts/check-release-config.ts"
   },
   "dependencies": {
     "expo": "~57.0.22",
@@ -24,11 +25,13 @@
     "expo-sharing": "^57.0.19",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "expo-tracking-transparency": "~57.0.2",
     "expo-video": "~57.0.4",
     "lucide-react-native": "^1.45.0",
     "nativewind": "^4.2.6",
     "react": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-google-mobile-ads": "16.3.4",
     "react-native-purchases": "^10.9.1",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
@@ -43,6 +46,7 @@
     "@types/react": "~19.2.0",
     "jest": "^30.5.1",
     "ts-jest": "^29.4.12",
+    "tsx": "^4.23.13",
     "typescript": "~5.9.2"
   },
   "private": true

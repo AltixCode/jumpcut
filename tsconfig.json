@@ -10,5 +10,11 @@
   },
   "exclude": [
     "src/**/__tests__/**"
+  ],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
   ]
 }

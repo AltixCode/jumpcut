@@ -40,3 +40,8 @@ yarn-error.*
 /ios
 /android
 dist/
+
+# Local Expo module build output. `/android` above only covers the generated
+# app project; a module under modules/ builds into its own android/build.
+**/android/build/
+**/android/.gradle/

@@ -4,6 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { TouchableOpacity, Text } from 'react-native';
 import { Crown } from 'lucide-react-native';
 import { initPurchases, checkIsPro } from '../src/services/purchases';
+import { initializeAds } from '../src/services/ads';
+import { useAdsStore } from '../src/store/adsStore';
 import { useCutStore } from '../src/store/useCutStore';
 import { useTheme } from '../src/theme/useTheme';
 import { t } from '../src/i18n';
@@ -15,8 +17,15 @@ export default function RootLayout() {
   const { isPro, setIsPro } = useCutStore();
 
   useEffect(() => {
+    void useAdsStore.getState().hydrate();
     initPurchases();
-    checkIsPro().then(setIsPro);
+    // Ads start only once entitlement is known, and only for users who have not bought the
+    // upgrade. Running the consent flow first would put a GDPR form -- and on iOS an ATT
+    // prompt -- in front of someone who has already paid never to see an ad.
+    void checkIsPro().then((pro) => {
+      setIsPro(pro);
+      if (!pro) void initializeAds();
+    });
   }, []);
 
   return (

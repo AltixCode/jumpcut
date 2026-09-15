@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Sparkles,
+  BadgeCheck,
   Layers,
   ShoppingBag,
   Tag,
@@ -31,7 +32,14 @@ export default function PaywallScreen() {
     usePaywall(() => router.back());
 
   const features = [
+    // Ad removal leads the list: it is what the store product is named after, and it is the
+    // benefit a free user has been feeling rather than reading about.
     {
+      icon: <BadgeCheck size={20} color={theme.primary} />,
+      title: t("featAdsTitle"),
+      desc: t("featAdsDesc"),
+    },
+  {
       icon: <Layers size={20} color={theme.accent} />,
       title: t("feat1Title"),
       desc: t("feat1Desc"),

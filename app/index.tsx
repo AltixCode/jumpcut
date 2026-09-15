@@ -13,6 +13,10 @@ import { cutter, encodeSegments, onCutProgress } from '../modules/video-cutter';
 import { useTheme } from '../src/theme/useTheme';
 import { t } from '../src/i18n';
 import { ForwardArrow } from '../src/components/DirectionalIcons';
+import { AdBanner } from '../src/components/AdBanner';
+import { useAdsStore } from '../src/store/adsStore';
+import { showInterstitial, showPrivacyOptionsForm } from '../src/services/ads';
+import { shouldShowInterstitial } from '../src/services/adPolicy';
 
 const formatDuration = (seconds: number) => {
   const whole = Math.max(0, Math.round(seconds));
@@ -27,6 +31,27 @@ export default function HomeScreen() {
     setSource, analyse, setOptions, setResult, setStage, setProgress, overFreeLimit, exportableKeep,
   } = useCutStore();
   const [busy, setBusy] = useState(false);
+
+  // Google requires a persistent entry back into the consent form wherever UMP reports that
+  // privacy options are available, which in practice means the EEA and the regulated US
+  // states. It is absent everywhere else rather than shown as a dead control.
+  const offerPrivacyOptions = useAdsStore((state) => state.consent.offerPrivacyOptions);
+
+  const maybeShowInterstitial = useCallback(async () => {
+    const { completions, lastInterstitialAt, markInterstitialShown } = useAdsStore.getState();
+    const decision = shouldShowInterstitial({
+      completions,
+      lastInterstitialAt,
+      now: Date.now(),
+      // Read at call time rather than captured: the user may have bought the upgrade from the
+      // paywall between opening this screen and finishing the cut.
+      isPro: useCutStore.getState().isPro,
+    });
+    if (!decision) return;
+    // Only a shown-and-dismissed ad resets the clock. Counting an unfilled request would
+    // suppress the next several cuts' ads for nothing.
+    if (await showInterstitial()) await markInterstitialShown();
+  }, []);
 
   const handlePick = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -103,9 +128,16 @@ export default function HomeScreen() {
       await MediaLibrary.saveToLibraryAsync(result.uri);
       setResult(result.uri, result.duration);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await useAdsStore.getState().recordCompletion();
       // The duration the file actually has, not the one that was planned: a
       // claim that does not match the export is worse than no claim.
-      Alert.alert(t('saved'), t('savedDesc', { duration: formatDuration(result.duration) }));
+      //
+      // The ad waits behind this confirmation. Interrupting the moment the export lands -- or
+      // worse, while it runs -- is the version of this that gets one-star reviews; once the
+      // user has read "saved" and tapped through, the work is done.
+      Alert.alert(t('saved'), t('savedDesc', { duration: formatDuration(result.duration) }), [
+        { text: t('ok'), onPress: () => void maybeShowInterstitial() },
+      ]);
     } catch (error) {
       Alert.alert(t('cutFailed'), error instanceof Error ? error.message : String(error));
     } finally {
@@ -113,7 +145,7 @@ export default function HomeScreen() {
       setBusy(false);
       setStage('idle');
     }
-  }, [exportableKeep, setProgress, setResult, setStage, source]);
+  }, [exportableKeep, setProgress, setResult, setStage, source, maybeShowInterstitial]);
 
   const analysed = keep.length > 0;
   const newLength = source ? source.duration - savedSeconds : 0;
@@ -314,7 +346,25 @@ export default function HomeScreen() {
             </View>
           </View>
         ))}
+
+        {offerPrivacyOptions ? (
+          <TouchableOpacity
+            onPress={() => {
+              void showPrivacyOptionsForm();
+            }}
+            accessibilityRole="button"
+            className="mt-2 py-3 items-center"
+            style={{ minHeight: 44 }}
+          >
+            <Text className="text-xs font-semibold underline" style={{ color: theme.textSecondary }}>
+              {t('adPrivacySettings')}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
+      {/* Anchored below the scroll area rather than inside it: a banner that scrolls with the
+          content can sit under a finger reaching for the cut button. */}
+      <AdBanner />
     </SafeAreaView>
   );
 }

@@ -1,7 +1,15 @@
 import { Platform } from "react-native";
 import Purchases, { PurchasesPackage, LOG_LEVEL } from "react-native-purchases";
 
-const ENTITLEMENT_ID = "pro";
+/**
+ * The RevenueCat entitlement one purchase grants.
+ *
+ * The lookup key says "remove ads" because that is what the store product is named, but the
+ * entitlement carries the whole upgrade: no ads *and* no free-tier limits. Keeping the key as
+ * RevenueCat has it matters more than the name reading perfectly here -- renaming an
+ * entitlement means recreating it, and the SDK keys die with it.
+ */
+const ENTITLEMENT_ID = "remove_ads";
 
 const RC_API_KEY = Platform.select({
   ios: process.env.EXPO_PUBLIC_RC_IOS_KEY || "appl_DPSsxDIBGfQLwjvCtyGcPWYnjjB",
