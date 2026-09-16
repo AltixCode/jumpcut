@@ -23,9 +23,11 @@ import { usePaywall } from "../src/hooks/usePaywall";
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from "../src/config/legal";
 import { t } from "../src/i18n";
 import { useTheme } from '../src/theme/useTheme';
+import { useTabletColumn } from '../src/theme/useTabletColumn';
 
 export default function PaywallScreen() {
   const theme = useTheme();
+  const tabletColumn = useTabletColumn();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { ctaLabel, loading, errorMsg, handlePurchase, handleRestore } =
@@ -83,7 +85,7 @@ export default function PaywallScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1" contentContainerStyle={tabletColumn}>
         <View className="mb-6 rounded-2xl border p-5" style={{ borderColor: theme.primaryBorder, backgroundColor: theme.primaryLight }}>
           <Text className="mb-1 text-xs font-bold uppercase tracking-wider" style={{ color: theme.primary }}>
             {t("antiSubTitle")}

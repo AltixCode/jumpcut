@@ -11,6 +11,7 @@ import { useCutStore, FREE_SECONDS, SENSITIVITY, WINDOW_SECONDS } from '../src/s
 import { rmsProfile, toMono } from '../src/engine/rmsProfile';
 import { cutter, encodeSegments, onCutProgress } from '../modules/video-cutter';
 import { useTheme } from '../src/theme/useTheme';
+import { useTabletColumn } from '../src/theme/useTabletColumn';
 import { t } from '../src/i18n';
 import { ForwardArrow } from '../src/components/DirectionalIcons';
 import { AdBanner } from '../src/components/AdBanner';
@@ -26,6 +27,7 @@ const formatDuration = (seconds: number) => {
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const tabletColumn = useTabletColumn();
   const {
     source, silences, keep, savedSeconds, options, stage, progress, isPro,
     setSource, analyse, setOptions, setResult, setStage, setProgress, overFreeLimit, exportableKeep,
@@ -152,7 +154,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={['bottom']} className="flex-1 px-5" style={{ backgroundColor: theme.background }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 , ...tabletColumn}}>
         <View className="mt-4 mb-5">
           <View
             className="self-start border px-3 py-1 rounded-full mb-3 flex-row items-center"

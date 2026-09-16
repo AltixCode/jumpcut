@@ -45,3 +45,8 @@ dist/
 # app project; a module under modules/ builds into its own android/build.
 **/android/build/
 **/android/.gradle/
+
+# env — local secrets and public SDK keys, never committed
+.env
+.env.local
+.env.*.local
