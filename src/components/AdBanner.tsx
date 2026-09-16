@@ -22,12 +22,28 @@ export function AdBanner() {
   const canServeAds = useAdsStore((state) => state.consent.canServeAds);
   const [failed, setFailed] = useState(false);
 
+  // Capture mode: no ad, at all, while a store screenshot is being taken.
+  //
+  // A live banner in a listing is someone else's artwork in our shelf space, and
+  // a Debug build serves Google's test creative with a literal "Test mode" badge
+  // on it. Dismissing the consent sheet to make the app visible to the capture
+  // tool is precisely what lets the ad load, so the ad-free state and the
+  // capturable state were mutually exclusive without this.
+  //
+  // __DEV__ means it cannot exist in a release build, and check-release-config
+  // refuses EXPO_PUBLIC_CAPTURE_MODE outright, so it cannot ship by accident.
+  if (__DEV__ && process.env.EXPO_PUBLIC_CAPTURE_MODE === '1') return null;
+
   if (isPro || !canServeAds || failed) return null;
 
   return (
     <View
       accessibilityLabel={t('adLabel')}
       style={{
+        // flexShrink: 0 so the banner can never be squeezed by a sibling that
+        // sizes itself to its content. Ata saw this on an iPad: "some of the ui
+        // elements are hidden behind the admob".
+        flexShrink: 0,
         height: BANNER_HEIGHT,
         alignItems: 'center',
         justifyContent: 'center',
