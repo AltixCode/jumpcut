@@ -48,8 +48,24 @@ function paywallSource() {
   const i18n = resolve(ROOT, 'src/i18n/index.ts');
   if (existsSync(i18n)) {
     const source = readFileSync(i18n, 'utf8');
-    // The English block is the one an author edits; the rest follow from it.
-    const en = source.split('  en: {')[1]?.split('\n  es: {')[0] ?? '';
+    /*
+     * The English block is the one an author edits; the rest follow from it.
+     *
+     * Both quoting styles, because eleven apps write `"en": {` and this used to
+     * split on the literal `  en: {`. For those the split found nothing, `en`
+     * came back empty, `keyed` stayed false, and the gate fell through to
+     * `paywall.tsx` -- which renders `t('feat2Desc')` rather than the sentence,
+     * so the sentence match found nothing either and the app passed by being
+     * unreadable at every step.
+     *
+     * That is the third tool broken by this one assumption (check-i18n and
+     * add-i18n-keys.mjs were the others), and the second place inside THIS
+     * file: the key pattern below had it too.
+     */
+    const open = source.match(/^\s*["']?en["']?\s*:\s*\{/m);
+    const rest = open ? source.slice(open.index + open[0].length) : '';
+    const close = rest.match(/^\s*["']?[a-z]{2}(-[A-Z]{2})?["']?\s*:\s*\{/m);
+    const en = close ? rest.slice(0, close.index) : rest;
     if (en) {
       parts.push(en);
       keyed = true;
@@ -92,8 +108,18 @@ const found = TEMPLATE_DEFAULTS.filter(([key, value]) => {
     // match. Same claim, same verdict, wherever it is written.
     return en.includes(value);
   }
-  const match = en.match(new RegExp(`${key}: '([^']*)'`));
-  return match && match[1] === value;
+  // Both quoting styles. Eleven apps write `"feat2Desc": "..."` -- capflow,
+  // jumpcut, netpulse, packpixel, redactpro, scribezero, signpure, slideforge,
+  // storychop, syncprompt, voicecrisp -- and a single-quote-only pattern finds
+  // nothing in them, so the gate passed by being unable to look. Their copy is
+  // genuinely customised, so nothing false was shipping; the gate simply could
+  // not have told us if it had been.
+  //
+  // This is the same assumption that broke check-i18n for those apps and
+  // add-i18n-keys.mjs for 31 of 42. Three tools, one belief about quoting,
+  // and every time it under-reported in a way indistinguishable from a pass.
+  const match = en.match(new RegExp(`["']?${key}["']?\\s*:\\s*(['"])([^'"]*)\\1`));
+  return match && match[2] === value;
 });
 
 if (found.length) {
