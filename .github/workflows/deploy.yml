@@ -313,6 +313,17 @@ jobs:
       tag_name: ${{ steps.version.outputs.tag_name }}
     steps:
       - name: Refuse to build if the host is short of disk
+        # Self-hosted only, deliberately.
+        #
+        # None of what follows is true of a GitHub-hosted runner: it is an
+        # ephemeral VM destroyed when the job ends, with nothing on it to
+        # protect. A hosted ubuntu-24.04 image reports 14G free, one gigabyte
+        # under this floor, so the guard failed every hosted build instantly --
+        # and `android_runner: github-hosted` exists precisely as the escape
+        # hatch for when the single self-hosted Linux runner is starved. The
+        # safety net was disabling the fallback it was meant to make safe: 26
+        # Android jobs queued behind one machine while four runners sat idle.
+        #
         # One of the two Linux runners shares a host with the production
         # Coolify estate -- 36 containers -- and that host filled its own disk
         # on 2026-09-13 and was stopped for it. A full disk 404s every site on
@@ -322,6 +333,7 @@ jobs:
         # the cleanup at the end of the job.
         #
         # Failing a build costs a re-run. Failing this host costs the websites.
+        if: runner.environment == 'self-hosted'
         run: |
           # `df --output` is GNU-only and the runner image may ship busybox df,
           # where it fails and the guard silently measures nothing.
