@@ -50,7 +50,19 @@ export const initPurchases = async (): Promise<boolean> => {
   initPromise = (async () => {
     try {
       if (!RC_API_KEY) return false;
-      Purchases.setLogLevel(LOG_LEVEL.WARN);
+      // Silence the SDK's own logs while capturing store screenshots.
+      //
+      // RevenueCat logs at WARN with a distinctive prefix, and in a DEBUG build
+      // -- which every capture is -- each one becomes a LogBox toast docked at
+      // the bottom of the screen. Four apps shipped IAP review screenshots with
+      // that toast covering the buy button, and one (scanlit) with a toast at
+      // almost exactly the app's own luminance, which no pixel check can see.
+      //
+      // The warnings are useful in ordinary development, so this silences them
+      // only under the capture flag, and __DEV__ keeps it inert in anything
+      // that ships.
+      const capturing = __DEV__ && process.env.EXPO_PUBLIC_CAPTURE_MODE === '1';
+      Purchases.setLogLevel(capturing ? LOG_LEVEL.ERROR : LOG_LEVEL.WARN);
       await Purchases.configure({ apiKey: RC_API_KEY });
       isInitialized = true;
       return true;
