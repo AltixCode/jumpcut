@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Linking,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -33,6 +34,19 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   onClose,
 }) => {
   const theme = useTheme();
+  // On a tablet this stops being a bottom sheet and becomes a centred card.
+  //
+  // A sheet anchored to the bottom of a 13" iPad leaves more than half the
+  // display as dimmed backdrop above it, and the purchase -- the whole reason
+  // the sheet exists -- sits in the last third of the screen. The bottom
+  // anchor is a phone idiom: it puts the content within reach of a thumb.
+  // There is no thumb at this size.
+  const { width: screenWidth } = useWindowDimensions();
+  const isTablet = screenWidth >= 700;
+  const asCard = isTablet
+    ? { maxWidth: 640, width: '100%' as const, borderRadius: 24, borderTopWidth: 1 }
+    : null;
+
   const insets = useSafeAreaInsets();
   const { ctaLabel, loading, errorMsg, handlePurchase, handleRestore } =
     usePaywall(onClose);
@@ -67,9 +81,9 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
       transparent
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end bg-black/80">
+      <View className={`flex-1 bg-black/80 ${isTablet ? "justify-center items-center" : "justify-end"}`}>
         <View
-          className="max-h-[90%] rounded-t-3xl border-t px-6 pt-6" style={{ borderColor: theme.cardBorder, backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 16) + 8 }}
+          className="max-h-[90%] rounded-t-3xl border-t px-6 pt-6" style={[{ borderColor: theme.cardBorder, backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 16) + 8 }, asCard]}
         >
           <View className="mb-4 flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
