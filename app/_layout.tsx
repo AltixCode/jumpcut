@@ -79,7 +79,14 @@ export default function RootLayout() {
         <Stack.Screen
           name="paywall"
           options={{
-            title: t('paywallTitle'),
+            // No navigation header: the paywall draws its own title row, with
+            // the icon and the close button, immediately beneath it. Both were
+            // showing, so every one of these apps rendered its paywall title
+            // twice about 60pt apart -- visible in any paywall screenshot the
+            // app ever ships. The sheet keeps drag-to-dismiss, and the in-sheet
+            // close button calls `router.back()`, so nothing is lost with the
+            // header gone.
+            headerShown: false,
             presentation: 'modal',
             // Inherited from screenOptions otherwise, which lets the paywall
             // push another copy of itself without limit.
