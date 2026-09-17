@@ -272,6 +272,21 @@ jobs:
             --apiIssuer "$APP_STORE_CONNECT_API_KEY_ISSUER"
 
       - name: Stash iOS Artifacts
+        # A stash failure must not fail the release.
+        #
+        # This uploads a convenience COPY of an artefact the pipeline has
+        # already delivered: the IPA goes to TestFlight and App Store Connect
+        # in an earlier step, and the AAB to Play. When the org hits the
+        # Actions artifact storage quota this step fails with
+        # "Failed to CreateArtifact: Artifact storage quota has been hit",
+        # and it took whole release runs red on builds that had succeeded and
+        # already uploaded. A red run that is not a broken build is worse than
+        # no run at all, because it trains people to ignore red.
+        #
+        # `continue-on-error` still marks the step failed and annotates the
+        # run, so the quota problem stays visible. It just stops it pretending
+        # the release failed.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: ios-release-artifacts
@@ -520,6 +535,21 @@ jobs:
           releaseName: ${{ steps.version.outputs.app_name }} ${{ steps.version.outputs.app_version }}
 
       - name: Stash Android Artifacts
+        # A stash failure must not fail the release.
+        #
+        # This uploads a convenience COPY of an artefact the pipeline has
+        # already delivered: the IPA goes to TestFlight and App Store Connect
+        # in an earlier step, and the AAB to Play. When the org hits the
+        # Actions artifact storage quota this step fails with
+        # "Failed to CreateArtifact: Artifact storage quota has been hit",
+        # and it took whole release runs red on builds that had succeeded and
+        # already uploaded. A red run that is not a broken build is worse than
+        # no run at all, because it trains people to ignore red.
+        #
+        # `continue-on-error` still marks the step failed and annotates the
+        # run, so the quota problem stays visible. It just stops it pretending
+        # the release failed.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: android-release-artifacts
