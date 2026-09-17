@@ -109,7 +109,20 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             <Text className="mb-1 text-xs font-bold uppercase tracking-wider" style={{ color: theme.primary }}>
               {t("antiSubTitle")}
             </Text>
-            <Text className="text-sm font-semibold leading-snug text-slate-100">
+            {/* `theme.text`, not a fixed light class.
+                This card's background IS theme-driven -- `theme.primaryLight`
+                is a 10% tint that sits on the light page in light appearance --
+                so near-white ink on it is near-white on near-white. The
+                anti-subscription promise, which is the one claim on this screen
+                the store holds us to, was invisible to every user not in dark
+                mode. The inverse mistake to storychop's and signpure's paywall
+                routes, where fixed-dark gradients were given theme ink. The
+                rule either way: ink and surface must vary together, or neither
+                must vary. */}
+            <Text
+              className="text-sm font-semibold leading-snug"
+              style={{ color: theme.text }}
+            >
               {t("antiSubHeadline")}
             </Text>
           </View>
