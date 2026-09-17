@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { TouchableOpacity, Text } from 'react-native';
+import { LogBox, TouchableOpacity, Text } from 'react-native';
 import { Crown } from 'lucide-react-native';
 import { initPurchases, checkIsPro } from '../src/services/purchases';
 import { initializeAds } from '../src/services/ads';
@@ -10,6 +10,24 @@ import { useCutStore } from '../src/store/useCutStore';
 import { useTheme } from '../src/theme/useTheme';
 import { t } from '../src/i18n';
 import '../global.css';
+
+/**
+ * No LogBox toast in a capture build.
+ *
+ * Setting the RevenueCat log level down to ERROR silences its chatter but not
+ * its errors -- and in a simulator the errors are unavoidable, because there is
+ * no StoreKit for it to reach, so the SDK correctly reports that it cannot load
+ * a catalogue. React Native draws that as a toast docked at the bottom of the
+ * screen, and it was photographed on a 13" iPad sitting across the purchase
+ * button. A store screenshot with a dev warning on it is not shippable, and no
+ * log level can prevent this one because the error is real.
+ *
+ * Gated on `__DEV__` and the capture flag together, so an ordinary debug build
+ * keeps every warning it should have, and a release build never reaches it.
+ */
+if (__DEV__ && process.env.EXPO_PUBLIC_CAPTURE_MODE === '1') {
+  LogBox.ignoreAllLogs(true);
+}
 
 export default function RootLayout() {
   const theme = useTheme();
