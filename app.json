@@ -34,7 +34,8 @@
           "tr",
           "el"
         ],
-        "CFBundleDevelopmentRegion": "en"
+        "CFBundleDevelopmentRegion": "en",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
