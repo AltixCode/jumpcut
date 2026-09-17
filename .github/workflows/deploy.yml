@@ -245,6 +245,44 @@ jobs:
             exit 1
           fi
 
+      - name: Verify the IPA can launch
+        # Read the binary BEFORE it is uploaded, not after it is attached.
+        #
+        # Four apps in this portfolio were rejected by Apple carrying
+        # `GADApplicationIdentifier = "-"`, which makes the Google Mobile Ads
+        # SDK raise at startup: the app dies on launch. `attach-verified-build.py`
+        # exists to catch that, but it reads the CI **artifact** -- so when the
+        # org is over its Actions artifact storage quota, no artifact is stashed,
+        # the verifier cannot read a binary, and it correctly refuses to attach
+        # anything. A whole night of releases sat unattachable for that reason.
+        #
+        # The IPA is right here, on disk, before any of that. Checking it now
+        # costs a second, removes the artifact dependency from the safety
+        # property, and stops a crashing build from reaching TestFlight at all
+        # rather than catching it on the way out.
+        #
+        # This does not replace the attach-time check. Two independent reads of
+        # the same fact is the point.
+        run: |
+          set -euo pipefail
+          IPA=$(find build/output -name "*.ipa" | head -n 1)
+          WORK=$(mktemp -d)
+          unzip -q "$IPA" -d "$WORK"
+          PLIST=$(find "$WORK/Payload" -maxdepth 2 -name Info.plist | head -n 1)
+          GAD=$(/usr/libexec/PlistBuddy -c "Print :GADApplicationIdentifier" "$PLIST" 2>/dev/null || true)
+          echo "GADApplicationIdentifier = '${GAD}'"
+          case "$GAD" in
+            ca-app-pub-*~*)
+              echo "ok: a well-formed AdMob application identifier" ;;
+            "")
+              echo "::error::GADApplicationIdentifier is EMPTY. The Google Mobile Ads SDK raises at startup and the app dies on launch. Check that this repo's ADMOB app-id secret is set and that app.config.ts falls back with || rather than ??, which keeps an empty string."
+              exit 1 ;;
+            *)
+              echo "::error::GADApplicationIdentifier is '${GAD}', which is not of the form ca-app-pub-...~... The SDK will raise at startup."
+              exit 1 ;;
+          esac
+          rm -rf "$WORK"
+
       - name: Upload to TestFlight
         if: ${{ (github.event_name == 'workflow_dispatch' && inputs.submit_to_stores == true) || vars.ENABLE_STORE_UPLOADS == 'true' }}
         env:
