@@ -35,10 +35,20 @@ from pathlib import Path
 
 OCR = Path(__file__).resolve().parent / "tools" / "ocr"
 
-# The band that carries the purchase controls. Above this is feature copy, and
-# a price quoted in a feature bullet is not the same claim as a price on the
-# button.
-BAND = (0.45, 1.0)
+# The whole frame, not a band.
+#
+# This started as BAND = (0.45, 1.0), on the assumption that a purchase lives
+# in a bottom-anchored sheet and that a price higher up is feature copy rather
+# than a real offer. That is true of most of this portfolio and false of at
+# least one app: gridlock-pop has no paywall screen at all -- its purchase is a
+# row inside Settings at roughly y=0.30 -- so the gate reported NO-PRICE on a
+# frame that plainly reads "Upgrade - $3.99". A gate that blocks correct work is
+# not a safe gate; people start shipping past it, and then it stops being read.
+#
+# So the price may be anywhere, and the report says WHERE it was found instead
+# of pretending to know what the layout should be. A price at the top of a
+# frame is worth a human glance; it is not worth a refusal.
+BAND = (0.0, 1.0)
 
 # A price is a currency mark next to digits, in either order -- "$3.99",
 # "3,99 €", "¥600". Kept deliberately loose: the question is whether the frame
@@ -91,8 +101,23 @@ def judge(path: Path) -> list[str]:
     for m in PLACEHOLDER.findall(blob):
         faults.append(f"unsubstituted placeholder {m}")
     if not PRICE.search(blob):
-        faults.append("no price anywhere in the purchase area")
+        faults.append("no price anywhere in the frame")
     return faults
+
+
+def price_position(path: Path) -> float | None:
+    """Where the price sits, 0.0 at the top. Reported, never judged."""
+    out = subprocess.run(
+        [str(OCR), str(path), "0.0", "1.0"], capture_output=True, text=True
+    )
+    for row in out.stdout.splitlines():
+        parts = row.split(" ", 2)
+        if len(parts) == 3 and PRICE.search(parts[2]):
+            try:
+                return float(parts[1])
+            except ValueError:
+                return None
+    return None
 
 
 def main() -> int:
@@ -116,7 +141,10 @@ def main() -> int:
             bad += 1
             print(f"NO-PRICE {p.name}: " + "; ".join(faults))
         else:
-            print(f"ok       {p.name}: price visible, nothing incriminating")
+            y = price_position(p)
+            where = f" at y={y:.2f}" if y is not None else ""
+            hint = "  <- high in the frame, worth a look" if (y or 0) < 0.35 else ""
+            print(f"ok       {p.name}: price visible{where}, nothing incriminating{hint}")
     return 1 if bad else 0
 
 

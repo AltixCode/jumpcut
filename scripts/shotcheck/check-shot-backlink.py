@@ -59,6 +59,59 @@ def backlink_width(path: Path) -> float:
     return 100.0 * rightmost / w
 
 
+# The ink measurement alone cannot tell a back-link from anything else wide in
+# the status bar. A dimmed "<" chevron on the screen BEHIND a modal sheet reads
+# as ink at the same width -- reported from a real frame, gridhabit-ipad's IAP
+# shot, which the measurement flagged and which is clean.
+#
+# So the measurement is now a pre-filter and the verdict comes from reading the
+# strip. A genuine back-link renders as its own text run before the clock:
+#
+#   real       ["• CapFlow", "9:41AM Wed 16 Sep", "GridHabit"]
+#   clean      ["09:41 Thu 17 Sep GridHabit"]
+#
+# If the OCR helper is not built, the measurement stands on its own and says so
+# rather than silently passing everything.
+import re as _re
+import subprocess as _sp
+
+_OCR = Path(__file__).resolve().parent / "tools" / "ocr"
+_LEADER = _re.compile(r"^\s*[•◀◄‹<❮]")
+
+
+def _status_bar_runs(path: Path) -> list[str] | None:
+    if not _OCR.exists():
+        return None
+    out = _sp.run([str(_OCR), str(path), "0.0", "0.025"], capture_output=True, text=True)
+    if out.returncode != 0:
+        return None
+    runs = []
+    for row in out.stdout.splitlines():
+        parts = row.split(" ", 2)
+        if len(parts) == 3 and parts[2].strip():
+            runs.append(parts[2].strip())
+    return runs
+
+
+def confirms_backlink(path: Path) -> bool | None:
+    """True = a back-link is readable, False = the strip is clean, None = cannot tell."""
+    runs = _status_bar_runs(path)
+    if runs is None:
+        return None
+    # A leader followed by an app NAME. "• 100" is a battery percentage on the
+    # right-hand side of the strip, not a back-link, and it flagged a clean
+    # HushTunnel frame.
+    for r in runs:
+        if _LEADER.match(r):
+            rest = _LEADER.sub("", r).strip()
+            if rest and not rest.isdigit():
+                return True
+    # A second signal for when the chevron does not survive OCR: a run that
+    # precedes the clock and is not itself clock-shaped.
+    non_clock = [r for r in runs if not _re.match(r"^\d", r)]
+    return len(runs) > 1 and len(non_clock) >= 2
+
+
 def main() -> int:
     bad = 0
     for arg in sys.argv[1:]:
@@ -80,9 +133,20 @@ def main() -> int:
         # earlier 24% was a point away from the clean cluster's top, which is
         # where a threshold gets it wrong.
         if width >= 27.0:
-            print(f"BACKLINK {p.name}: ink in the status bar reaches {width:.0f}% "
-                  f"of the width -- likely a '< OtherApp' affordance beside the clock")
-            bad += 1
+            confirmed = confirms_backlink(p)
+            if confirmed is True:
+                runs = _status_bar_runs(p) or []
+                print(f"BACKLINK {p.name}: status bar reads {runs!r} -- "
+                      f"captured by switching out of another app")
+                bad += 1
+            elif confirmed is False:
+                print(f"ok       {p.name}: ink reaches {width:.0f}% but the strip reads "
+                      f"clean -- something wide behind a sheet, not a back-link")
+            else:
+                print(f"BACKLINK {p.name}: ink in the status bar reaches {width:.0f}% "
+                      f"of the width -- likely a '< OtherApp' affordance beside the "
+                      f"clock (unconfirmed: build tools/ocr to be sure)")
+                bad += 1
         else:
             print(f"ok       {p.name}: status-bar ink stops at {width:.0f}%")
     return 1 if bad else 0
