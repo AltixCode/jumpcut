@@ -82,9 +82,50 @@ export const initPurchases = async (): Promise<boolean> => {
  * unreachable. Used to render the real, store-localized price on the paywall —
  * App Review rejects paywalls whose displayed price is baked into the bundle.
  */
+/**
+ * The package a store screenshot shows when the simulator has no store.
+ *
+ * A StoreKit configuration cannot reach this pipeline. Xcode applies one by
+ * syncing it to the device as part of running a scheme --
+ * `-[DVTDevice handleStoreKitConfigurationSyncForBundleID:configurationFilePath:]`
+ * -- and `xcrun simctl` has no equivalent, so an `expo run:ios` plus
+ * `simctl launch` build never receives a product catalogue however correct its
+ * .storekit file is. The paywall then renders its unavailable state, and the
+ * IAP review screenshot Apple sees says "The store is not reachable right now"
+ * where the buy button belongs. Several live ones do.
+ *
+ * So capture mode supplies the price from the build instead. The figure comes
+ * from `scripts/iap.json`, read out of the App Store Connect price schedule, so
+ * the screenshot states this product's real cost -- it simply learns it from
+ * the bundle rather than from StoreKit.
+ *
+ * `__DEV__` is what makes this safe: it is false in every release build, so
+ * this is inert in anything that ships no matter how the environment is set.
+ */
+const capturePriceFallback = (): PurchasesPackage | null => {
+  const price = process.env.EXPO_PUBLIC_CAPTURE_PRICE;
+  const capturing = __DEV__ && process.env.EXPO_PUBLIC_CAPTURE_MODE === '1';
+  if (!capturing || !price) return null;
+  const amount = Number(price.replace(/[^0-9.]/g, '')) || 0;
+  // Shaped like a package for display only. Nothing purchases it: a capture
+  // route is forbidden from tapping a purchase button, and a release build
+  // never reaches this line.
+  return {
+    identifier: 'lifetime',
+    packageType: 'LIFETIME',
+    offeringIdentifier: 'capture',
+    product: {
+      identifier: 'capture.lifetime',
+      priceString: price.startsWith('$') ? price : `$${price}`,
+      price: amount,
+      currencyCode: 'USD',
+    },
+  } as unknown as PurchasesPackage;
+};
+
 export const getLifetimePackage =
   async (): Promise<PurchasesPackage | null> => {
-    if (!(await initPurchases())) return null;
+    if (!(await initPurchases())) return capturePriceFallback();
     try {
       const offerings = await Purchases.getOfferings();
       return (
@@ -94,7 +135,7 @@ export const getLifetimePackage =
       );
     } catch (error) {
       console.warn("[Purchases] Could not load offerings:", error);
-      return null;
+      return capturePriceFallback();
     }
   };
 
