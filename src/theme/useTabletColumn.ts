@@ -22,13 +22,22 @@ const TABLET_MAX_WIDTH = 920;
  * most screens -- and that leaves a phone's worth of interface floating in the
  * middle with dead space above and below. Content starts at the top.
  */
-export function useTabletColumn() {
+/**
+ * `cap` narrows the column further for a screen that is a single block of prose
+ * and one button -- a paywall, not a list. 920pt of feature text on a 13" iPad
+ * reads as stretched even though nothing overflows; 640 is the width the same
+ * copy already uses on the phone, so the screen looks composed rather than
+ * inflated at every size. Omit it and the general cap applies unchanged.
+ */
+export function useTabletColumn(cap?: number) {
   const { width } = useWindowDimensions();
   const isTablet = width >= 700;
+  const phoneMax = cap ?? CONTENT_MAX_WIDTH;
+  const tabletMax = cap ?? TABLET_MAX_WIDTH;
 
   return {
     width: '100%' as const,
-    maxWidth: isTablet ? Math.min(width - 48, TABLET_MAX_WIDTH) : CONTENT_MAX_WIDTH,
+    maxWidth: isTablet ? Math.min(width - 48, tabletMax) : phoneMax,
     alignSelf: 'center' as const,
   };
 }

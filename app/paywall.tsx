@@ -27,7 +27,7 @@ import { useTabletColumn } from '../src/theme/useTabletColumn';
 
 export default function PaywallScreen() {
   const theme = useTheme();
-  const tabletColumn = useTabletColumn();
+  const tabletColumn = useTabletColumn(640);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { ctaLabel, loading, errorMsg, handlePurchase, handleRestore } =
@@ -85,7 +85,7 @@ export default function PaywallScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1" contentContainerStyle={tabletColumn}>
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1" contentContainerStyle={{ ...tabletColumn, flexGrow: 1, justifyContent: 'center' }}>
         <View className="mb-6 rounded-2xl border p-5" style={{ borderColor: theme.primaryBorder, backgroundColor: theme.primaryLight }}>
           <Text className="mb-1 text-xs font-bold uppercase tracking-wider" style={{ color: theme.primary }}>
             {t("antiSubTitle")}
