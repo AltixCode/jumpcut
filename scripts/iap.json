@@ -1,0 +1,6 @@
+{
+  "productId": "com.altixcode.jumpcut.removeads",
+  "price": "3.99",
+  "_source": "App Store Connect price schedule, read 2026-09-17",
+  "_why": "The capture pipeline hardcoded 4.99 for every app. Exactly one app is 4.99; 37 are 3.99. Every StoreKit configuration generated before this carried the wrong price."
+}
