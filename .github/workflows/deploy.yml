@@ -334,7 +334,8 @@ jobs:
   build-android:
     name: Android Build & Package
     if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'android' }}
-    # Any self-hosted Linux runner, of either architecture.
+    # The Coolify Linux/x64 host, plus ONE specific Mac (Atas-Mac-mini) as
+    # overflow -- not all macOS runners.
     #
     # This said "macOS, not Linux", on the grounds that the only linux/x64
     # runner was the Coolify host and it was "permanently busy serving
@@ -350,15 +351,22 @@ jobs:
     # the SDK happily and then cannot run it. The x64 box got through prebuild
     # and into Gradle on the same commit.
     #
-    # So this is one runner again, not two. That is a real single point of
-    # failure and the disk load is not split -- see the guards below.
+    # Asking for plain `macOS` put Android in a queue with iOS for every
+    # machine that can sign an IPA, and whenever one Mac dropped out that was
+    # Android's entire capacity too -- so this went back to one Linux runner,
+    # a real single point of failure (see the disk guards below).
     #
-    # Nothing here is mac-specific: `setup-java` supplies the JDK on any
-    # platform and `setup-android` installs the SDK. Asking for macOS put
-    # Android in a queue with iOS for the only two machines that can sign an
-    # IPA, and whenever the third Mac dropped out that was Android's entire
-    # capacity too.
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runner == 'github-hosted' && 'ubuntu-24.04' || fromJSON('["self-hosted", "Linux", "X64"]') }}
+    # 2026-09-18: the Coolify host's runner AND Atas-Mac-mini's runner both
+    # silently stopped polling for jobs (process alive, GitHub still reported
+    # them online, nothing dispatched, for ~5 hours) -- Android and iOS were
+    # both down at once with no fallback. `android-build` is a custom label
+    # added to exactly two runners: `hetzner-coolify-runner` and
+    # `Atas-Mac-mini` (not the other two Macs, which don't have the Android
+    # SDK installed and keep iOS capacity un-contended). This is deliberately
+    # narrower than the old "macOS" label: Android now has a fallback host
+    # without re-creating the iOS/Android contention this file already
+    # rejected once.
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.android_runner == 'github-hosted' && 'ubuntu-24.04' || fromJSON('["self-hosted", "android-build"]') }}
     outputs:
       app_name: ${{ steps.version.outputs.app_name }}
       app_version: ${{ steps.version.outputs.app_version }}
@@ -389,8 +397,12 @@ jobs:
         if: runner.environment == 'self-hosted'
         run: |
           # `df --output` is GNU-only and the runner image may ship busybox df,
-          # where it fails and the guard silently measures nothing.
-          free_gb=$(df -PBG / | awk 'NR==2 {print $4}' | tr -dc '0-9')
+          # where it fails and the guard silently measures nothing. `-B` is a
+          # GNU-df blocksize flag with no BSD/macOS equivalent -- Atas-Mac-mini
+          # is now a valid runner for this job (android-build label) and its
+          # df rejects `-B` outright, so this reads free space in POSIX `-Pk`
+          # (kibibytes, supported by both GNU and BSD df) and converts to GB.
+          free_gb=$(df -Pk / | awk 'NR==2 {print int($4/1024/1024)}')
           echo "free on this runner: ${free_gb}G"
           if [ "${free_gb:-0}" -lt 15 ]; then
             echo "::error::only ${free_gb}G free — refusing to build rather than risk the host"
@@ -610,7 +622,7 @@ jobs:
         if: always()
         run: |
           rm -rf node_modules android/app/build android/build build/output || true
-          echo "free after cleanup: $(df -PBG / | awk 'NR==2 {print $4}' | tr -dc '0-9')G"
+          echo "free after cleanup: $(df -Pk / | awk 'NR==2 {print int($4/1024/1024)}')G"
 
   publish-release:
     name: Publish GitHub Release
