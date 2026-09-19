@@ -313,6 +313,7 @@ jobs:
             --apiIssuer "$APP_STORE_CONNECT_API_KEY_ISSUER"
 
       - name: Stash iOS Artifacts
+        if: github.server_url == 'https://github.com'
         # A stash failure must not fail the release.
         #
         # This uploads a convenience COPY of an artefact the pipeline has
@@ -588,6 +589,7 @@ jobs:
           releaseName: ${{ steps.version.outputs.app_name }} ${{ steps.version.outputs.app_version }}
 
       - name: Stash Android Artifacts
+        if: github.server_url == 'https://github.com'
         # A stash failure must not fail the release.
         #
         # This uploads a convenience COPY of an artefact the pipeline has
