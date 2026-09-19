@@ -633,7 +633,7 @@ jobs:
   publish-release:
     name: Publish GitHub Release
     needs: [build-ios, build-android]
-    if: always() && (needs.build-ios.result == 'success' || needs.build-android.result == 'success')
+    if: github.server_url == 'https://github.com' && (needs.build-ios.result == 'success' || needs.build-android.result == 'success')
     # Same starved-runner reason as the Android job above.
     runs-on: [self-hosted, macOS, ARM64]
     steps:
