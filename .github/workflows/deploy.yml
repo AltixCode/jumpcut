@@ -134,6 +134,7 @@ jobs:
         env:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
         run: |
           cd ios
           pod install --repo-update
@@ -529,13 +530,13 @@ jobs:
           # worthless in CI anyway -- nothing reuses it -- and its disappearance
           # is reported as a Gradle bug rather than as memory pressure.
           echo "Building Release APK..."
-          ./gradlew assembleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false \
+          ./gradlew assembleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
             "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
             "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
             "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
             "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
           echo "Building Release AAB Bundle..."
-          ./gradlew bundleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false \
+          ./gradlew bundleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
             "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
             "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
             "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
@@ -642,6 +643,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download Stashed Artifacts
+        if: github.server_url == 'https://github.com'
         uses: actions/download-artifact@v4
         with:
           path: build/downloaded
