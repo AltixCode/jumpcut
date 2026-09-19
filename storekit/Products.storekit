@@ -1,0 +1,35 @@
+{
+  "identifier": "42AA7243-63DD-439F-A638-88E5BD3CBD1D",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "4ACFC573-B9A3-4611-86DE-5881B135E9B3",
+      "localizations": [
+        {
+          "description": "jumpcut remove ads lifetime unlock",
+          "displayName": "jumpcut remove ads",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.altixcode.jumpcut.removeads",
+      "referenceName": "jumpcut remove ads",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "",
+    "_developerTeamID": "",
+    "_failTransactionsEnabled": false,
+    "_lastSynchronizedDate": 0,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

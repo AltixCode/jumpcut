@@ -98,12 +98,18 @@ def modal_signature(path: Path) -> tuple[float, float, float]:
 
 def main() -> int:
     bad = 0
+    unread = 0
     for arg in sys.argv[1:]:
         p = Path(arg)
         try:
             frac, border, centre = modal_signature(p)
         except Exception as exc:  # noqa: BLE001
-            print(f"?      {p.name}: cannot read ({exc})")
+            # Counted, not skipped. Printing "?" and continuing let a frame the
+            # checker could not read contribute nothing to the exit code, so a
+            # run where every frame failed still exited 0 -- indistinguishable
+            # from "all clean". Same fail-open as the tree-reading gates had.
+            print(f"?      {p.name}: cannot read ({exc}) -- this is NOT a verdict")
+            unread += 1
             continue
         if (border <= MAX_BORDER_LUMA
                 and frac >= MIN_CENTRE_BRIGHT
@@ -111,7 +117,9 @@ def main() -> int:
             print(f"DIALOG {p}: a bright card fills {frac:.0f}% of the centre "
                   f"(centre luma {centre:.0f}) over a dark border ({border:.0f})")
             bad += 1
-    return 1 if bad else 0
+    if bad:
+        return 1
+    return 3 if unread else 0
 
 
 if __name__ == "__main__":

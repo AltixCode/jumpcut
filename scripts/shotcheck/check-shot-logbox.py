@@ -42,10 +42,21 @@ def toasts(elements: list[dict]) -> list[str]:
 
 
 def main() -> int:
+    # An unreadable or empty tree is NO INFORMATION and must not be reported as
+    # "no toast". `return 0` here meant the gate failed OPEN: 0 also means
+    # "verified clean", so a caller could not tell a checked frame from an
+    # unchecked one. A sibling gate was observed passing a frame on a 0-byte
+    # dump because the device was mid-erase. An empty list is the same trap one
+    # layer down: `[]` parses and sails through to a clean pass.
     try:
         els = json.load(sys.stdin)
-    except Exception:
-        return 0  # an unreadable tree must never reject a good frame
+    except Exception as err:
+        print(f"NO-TREE  could not parse the dump ({err}) -- this is NOT a verdict")
+        return 3
+    if not isinstance(els, list) or not els:
+        print("NO-TREE  the dump is empty -- no toast was looked for, "
+              "this is NOT a verdict (was the device mid-erase?)")
+        return 3
     found = toasts(els)
     if not found:
         print("ok       no LogBox toast on screen")
