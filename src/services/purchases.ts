@@ -1,5 +1,5 @@
-import { Platform } from "react-native";
 import Purchases, { PurchasesPackage, LOG_LEVEL } from "react-native-purchases";
+import { REVENUECAT_API_KEY } from "../config/env";
 
 /**
  * The RevenueCat entitlement one purchase grants.
@@ -11,12 +11,13 @@ import Purchases, { PurchasesPackage, LOG_LEVEL } from "react-native-purchases";
  */
 const ENTITLEMENT_ID = "remove_ads";
 
-const RC_API_KEY = Platform.select({
-  ios: process.env.EXPO_PUBLIC_RC_IOS_KEY || "appl_DPSsxDIBGfQLwjvCtyGcPWYnjjB",
-  android:
-    process.env.EXPO_PUBLIC_RC_ANDROID_KEY ||
-    "goog_NGdIrUUVKqEfTxHtpmqvAWYYmBP",
-});
+/**
+ * Resolved from the environment, with no baked-in fallback. A hardcoded key here would keep
+ * working after the RevenueCat app was recreated -- which the playbook warns invalidates SDK
+ * keys -- so the app would look healthy while every purchase failed against a dead project.
+ * Absent means purchases report `store_unavailable`, which the paywall already handles.
+ */
+const RC_API_KEY = REVENUECAT_API_KEY;
 
 /**
  * Why the outcome is a tagged union rather than a boolean: a boolean cannot
