@@ -524,6 +524,7 @@ jobs:
         run: |
           mkdir -p build/output
           cd android
+          export GRADLE_USER_HOME="${RUNNER_TEMP:-/tmp}/gradle_user_home_${{ github.run_id }}"
           # `--no-daemon` and a worker cap, because the failure this replaces was
           # "Gradle build daemon disappeared unexpectedly": the daemon JVM was
           # being killed outright. Two macOS runners now share this machine with
@@ -532,13 +533,13 @@ jobs:
           # worthless in CI anyway -- nothing reuses it -- and its disappearance
           # is reported as a Gradle bug rather than as memory pressure.
           echo "Building Release APK..."
-          ./gradlew assembleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
+          ./gradlew assembleRelease --stacktrace --no-daemon --gradle-user-home "$GRADLE_USER_HOME" --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
             "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
             "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
             "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
             "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
           echo "Building Release AAB Bundle..."
-          ./gradlew bundleRelease --stacktrace --no-daemon --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
+          ./gradlew bundleRelease --stacktrace --no-daemon --gradle-user-home "$GRADLE_USER_HOME" --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
             "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
             "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
             "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
@@ -589,7 +590,7 @@ jobs:
           releaseFiles: build/output/${{ steps.version.outputs.app_name }}-${{ steps.version.outputs.app_version }}.aab
           mappingFile: build/output/mapping.txt
           track: ${{ vars.PLAY_STORE_TRACK || 'production' }}
-          status: completed
+          status: ${{ vars.PLAY_STORE_STATUS || 'completed' }}
           # Must be false until the app has been published once. Play answers
           # "Changes are sent for review automatically. The query parameter
           # changesNotSentForReview must not be set." and fails the whole
