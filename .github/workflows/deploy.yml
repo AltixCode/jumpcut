@@ -588,7 +588,7 @@ jobs:
           packageName: com.altixcode.jumpcut
           releaseFiles: build/output/${{ steps.version.outputs.app_name }}-${{ steps.version.outputs.app_version }}.aab
           mappingFile: build/output/mapping.txt
-          track: internal
+          track: ${{ vars.PLAY_STORE_TRACK || 'production' }}
           status: completed
           # Must be false until the app has been published once. Play answers
           # "Changes are sent for review automatically. The query parameter
@@ -637,6 +637,7 @@ jobs:
         # them each time would cost far more than it saves.
         if: always()
         run: |
+          ./android/gradlew --stop >/dev/null 2>&1 || true
           rm -rf node_modules android/app/build android/build build/output || true
           echo "free after cleanup: $(df -Pk / | awk 'NR==2 {print int($4/1024/1024)}')G"
 
