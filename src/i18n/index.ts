@@ -117,7 +117,14 @@ export const translations = {
     "feat3Title": "Full-quality export",
     "feat3Desc": "Cut at the clip's own resolution, ready to post.",
     "feat4Title": "100% private on-device",
-    "feat4Desc": "Nothing you open leaves the phone, and there is no server or account. The upgrade also removes every ad."
+    "feat4Desc": "Nothing you open leaves the phone, and there is no server or account. The upgrade also removes every ad.",
+    "previewTitle": "Preview",
+    "previewDesc": "Watch the result before it's saved to your library.",
+    "previewSaveButton": "Save to Photos",
+    "fineTuneTrim": "Fine-Tune the Ends",
+    "trimStartLabel": "Start",
+    "trimEndLabel": "End",
+    "previewUpdating": "Updating preview..."
   },
   "es": {
     "appName": "JumpCut",
@@ -202,7 +209,14 @@ export const translations = {
     "feat3Title": "Exportación con calidad completa",
     "feat3Desc": "Cortado a la resolución original del clip, listo para publicar.",
     "feat4Title": "100% privado en el dispositivo",
-    "feat4Desc": "Nada de lo que abres sale del teléfono, y no hay servidor ni cuenta. La compra también elimina todos los anuncios."
+    "feat4Desc": "Nada de lo que abres sale del teléfono, y no hay servidor ni cuenta. La compra también elimina todos los anuncios.",
+    "previewTitle": "Vista previa",
+    "previewDesc": "Mira el resultado antes de guardarlo en tu galería.",
+    "previewSaveButton": "Guardar en Fotos",
+    "fineTuneTrim": "Ajustar los extremos",
+    "trimStartLabel": "Inicio",
+    "trimEndLabel": "Final",
+    "previewUpdating": "Actualizando la vista previa..."
   },
   "fr": {
     "appName": "JumpCut",
@@ -287,7 +301,14 @@ export const translations = {
     "feat3Title": "Export pleine qualité",
     "feat3Desc": "Coupé à la résolution d'origine du clip, prêt à publier.",
     "feat4Title": "100 % privé, sur l'appareil",
-    "feat4Desc": "Rien de ce que vous ouvrez ne quitte le téléphone, sans serveur ni compte. L'achat supprime aussi toutes les publicités."
+    "feat4Desc": "Rien de ce que vous ouvrez ne quitte le téléphone, sans serveur ni compte. L'achat supprime aussi toutes les publicités.",
+    "previewTitle": "Aperçu",
+    "previewDesc": "Regardez le résultat avant de l'enregistrer dans votre photothèque.",
+    "previewSaveButton": "Enregistrer dans Photos",
+    "fineTuneTrim": "Ajuster les extrémités",
+    "trimStartLabel": "Début",
+    "trimEndLabel": "Fin",
+    "previewUpdating": "Mise à jour de l'aperçu..."
   },
   "de": {
     "appName": "JumpCut",
@@ -372,7 +393,14 @@ export const translations = {
     "feat3Title": "Export in voller Qualität",
     "feat3Desc": "Geschnitten in der Originalauflösung des Clips, fertig zum Posten.",
     "feat4Title": "100 % privat auf dem Gerät",
-    "feat4Desc": "Nichts, was du öffnest, verlässt das Gerät – kein Server, kein Konto. Der Kauf entfernt außerdem jede Werbung."
+    "feat4Desc": "Nichts, was du öffnest, verlässt das Gerät – kein Server, kein Konto. Der Kauf entfernt außerdem jede Werbung.",
+    "previewTitle": "Vorschau",
+    "previewDesc": "Sieh dir das Ergebnis an, bevor es in deiner Mediathek gespeichert wird.",
+    "previewSaveButton": "In Fotos sichern",
+    "fineTuneTrim": "Enden feinjustieren",
+    "trimStartLabel": "Anfang",
+    "trimEndLabel": "Ende",
+    "previewUpdating": "Vorschau wird aktualisiert..."
   },
   "ru": {
     "appName": "JumpCut",
@@ -457,7 +485,14 @@ export const translations = {
     "feat3Title": "Экспорт без потери качества",
     "feat3Desc": "Монтаж в исходном разрешении ролика — можно сразу публиковать.",
     "feat4Title": "100 % приватно, на устройстве",
-    "feat4Desc": "Ничего из открытого не покидает телефон, нет ни сервера, ни аккаунта. Покупка также убирает всю рекламу."
+    "feat4Desc": "Ничего из открытого не покидает телефон, нет ни сервера, ни аккаунта. Покупка также убирает всю рекламу.",
+    "previewTitle": "Предпросмотр",
+    "previewDesc": "Посмотрите результат перед сохранением в галерею.",
+    "previewSaveButton": "Сохранить в Фото",
+    "fineTuneTrim": "Точная настройка краёв",
+    "trimStartLabel": "Начало",
+    "trimEndLabel": "Конец",
+    "previewUpdating": "Обновление предпросмотра..."
   },
   "zh": {
     "appName": "JumpCut",
@@ -542,7 +577,14 @@ export const translations = {
     "feat3Title": "原画质导出",
     "feat3Desc": "按视频原分辨率剪辑，导出即可发布。",
     "feat4Title": "100% 本机隐私",
-    "feat4Desc": "你打开的内容不会离开手机，没有服务器也没有账号。购买后还会移除所有广告。"
+    "feat4Desc": "你打开的内容不会离开手机，没有服务器也没有账号。购买后还会移除所有广告。",
+    "previewTitle": "预览",
+    "previewDesc": "保存到相册之前先看看效果。",
+    "previewSaveButton": "保存到相册",
+    "fineTuneTrim": "微调首尾",
+    "trimStartLabel": "开头",
+    "trimEndLabel": "结尾",
+    "previewUpdating": "正在更新预览…"
   },
   "ja": {
     "appName": "JumpCut",
@@ -627,7 +669,14 @@ export const translations = {
     "feat3Title": "フル画質で書き出し",
     "feat3Desc": "クリップそのままの解像度でカットし、すぐに投稿できます。",
     "feat4Title": "100% 端末内でプライベート",
-    "feat4Desc": "開いたものは端末から出ず、サーバーもアカウントもありません。購入すればすべての広告も消えます。"
+    "feat4Desc": "開いたものは端末から出ず、サーバーもアカウントもありません。購入すればすべての広告も消えます。",
+    "previewTitle": "プレビュー",
+    "previewDesc": "ライブラリに保存する前に結果を確認できます。",
+    "previewSaveButton": "写真に保存",
+    "fineTuneTrim": "両端を微調整",
+    "trimStartLabel": "開始",
+    "trimEndLabel": "終了",
+    "previewUpdating": "プレビューを更新中…"
   },
   "pt": {
     "appName": "JumpCut",
@@ -712,7 +761,14 @@ export const translations = {
     "feat3Title": "Exportação em qualidade total",
     "feat3Desc": "Cortado na resolução original do clipe, pronto para publicar.",
     "feat4Title": "100% privado no aparelho",
-    "feat4Desc": "Nada do que abre sai do telemóvel, sem servidor nem conta. A compra remove também todos os anúncios."
+    "feat4Desc": "Nada do que abre sai do telemóvel, sem servidor nem conta. A compra remove também todos os anúncios.",
+    "previewTitle": "Pré-visualização",
+    "previewDesc": "Veja o resultado antes de salvar na sua galeria.",
+    "previewSaveButton": "Salvar em Fotos",
+    "fineTuneTrim": "Ajustar as pontas",
+    "trimStartLabel": "Início",
+    "trimEndLabel": "Fim",
+    "previewUpdating": "Atualizando a pré-visualização..."
   },
   "ko": {
     "appName": "JumpCut",
@@ -797,7 +853,14 @@ export const translations = {
     "feat3Title": "원본 화질 내보내기",
     "feat3Desc": "클립 원본 해상도로 잘라내어 바로 올릴 수 있습니다.",
     "feat4Title": "100% 기기 내 처리",
-    "feat4Desc": "연 파일은 기기를 벗어나지 않으며 서버도 계정도 없습니다. 구매하면 모든 광고도 사라집니다."
+    "feat4Desc": "연 파일은 기기를 벗어나지 않으며 서버도 계정도 없습니다. 구매하면 모든 광고도 사라집니다.",
+    "previewTitle": "미리보기",
+    "previewDesc": "보관함에 저장하기 전에 결과를 확인하세요.",
+    "previewSaveButton": "사진에 저장",
+    "fineTuneTrim": "양 끝 미세 조정",
+    "trimStartLabel": "시작",
+    "trimEndLabel": "끝",
+    "previewUpdating": "미리보기 업데이트 중…"
   },
   "it": {
     "appName": "JumpCut",
@@ -882,7 +945,14 @@ export const translations = {
     "feat3Title": "Esportazione a piena qualità",
     "feat3Desc": "Tagliato alla risoluzione originale della clip, pronto da pubblicare.",
     "feat4Title": "100% privato sul dispositivo",
-    "feat4Desc": "Nulla di ciò che apri lascia il telefono, senza server né account. L'acquisto elimina anche tutta la pubblicità."
+    "feat4Desc": "Nulla di ciò che apri lascia il telefono, senza server né account. L'acquisto elimina anche tutta la pubblicità.",
+    "previewTitle": "Anteprima",
+    "previewDesc": "Guarda il risultato prima di salvarlo nella tua libreria.",
+    "previewSaveButton": "Salva in Foto",
+    "fineTuneTrim": "Regola le estremità",
+    "trimStartLabel": "Inizio",
+    "trimEndLabel": "Fine",
+    "previewUpdating": "Aggiornamento dell'anteprima..."
   },
   "tr": {
     "appName": "JumpCut",
@@ -967,7 +1037,14 @@ export const translations = {
     "feat3Title": "Tam kalitede dışa aktarma",
     "feat3Desc": "Klibin kendi çözünürlüğünde kesilir, paylaşmaya hazır.",
     "feat4Title": "%100 cihazda, gizli",
-    "feat4Desc": "Açtığınız hiçbir şey telefondan çıkmaz; sunucu da hesap da yok. Satın alma ayrıca tüm reklamları kaldırır."
+    "feat4Desc": "Açtığınız hiçbir şey telefondan çıkmaz; sunucu da hesap da yok. Satın alma ayrıca tüm reklamları kaldırır.",
+    "previewTitle": "Önizleme",
+    "previewDesc": "Galerine kaydetmeden önce sonucu izle.",
+    "previewSaveButton": "Fotoğraflara Kaydet",
+    "fineTuneTrim": "Uçları İnce Ayarla",
+    "trimStartLabel": "Başlangıç",
+    "trimEndLabel": "Bitiş",
+    "previewUpdating": "Önizleme güncelleniyor..."
   },
   "ar": {
     "appName": "JumpCut",
@@ -1053,6 +1130,13 @@ export const translations = {
     "feat3Desc": "قص بدقة المقطع نفسها، جاهز للنشر.",
     "feat4Title": "خصوصية كاملة على الجهاز",
     "feat4Desc": "لا يغادر هاتفك أي شيء تفتحه، ولا يوجد خادم ولا حساب. الترقية تزيل أيضًا كل إعلان.",
+    "previewTitle": "معاينة",
+    "previewDesc": "شاهد النتيجة قبل حفظها في مكتبتك.",
+    "previewSaveButton": "حفظ في الصور",
+    "fineTuneTrim": "ضبط الطرفين بدقة",
+    "trimStartLabel": "البداية",
+    "trimEndLabel": "النهاية",
+    "previewUpdating": "جارٍ تحديث المعاينة..."
   },
   "fa": {
     "appName": "JumpCut",
@@ -1138,6 +1222,13 @@ export const translations = {
     "feat3Desc": "برش با همان رزولوشن خود ویدیو، آمادهٔ انتشار.",
     "feat4Title": "کاملاً خصوصی، روی دستگاه",
     "feat4Desc": "هیچ‌چیزی که باز می‌کنید از گوشی بیرون نمی‌رود، و نه سروری هست نه حسابی. این ارتقا همهٔ تبلیغ‌ها را هم برمی‌دارد.",
+    "previewTitle": "پیش‌نمایش",
+    "previewDesc": "قبل از ذخیره در کتابخانه، نتیجه را ببینید.",
+    "previewSaveButton": "ذخیره در عکس‌ها",
+    "fineTuneTrim": "تنظیم دقیق دو سر",
+    "trimStartLabel": "ابتدا",
+    "trimEndLabel": "انتها",
+    "previewUpdating": "در حال به‌روزرسانی پیش‌نمایش..."
   },
   "el": {
     "appName": "JumpCut",
@@ -1222,7 +1313,14 @@ export const translations = {
     "feat3Title": "Εξαγωγή σε πλήρη ποιότητα",
     "feat3Desc": "Κομμένο στην ανάλυση του ίδιου του κλιπ, έτοιμο για δημοσίευση.",
     "feat4Title": "100% ιδιωτικό, στη συσκευή",
-    "feat4Desc": "Τίποτα από όσα ανοίγετε δεν φεύγει από το τηλέφωνο — χωρίς διακομιστή και χωρίς λογαριασμό. Η αγορά αφαιρεί και κάθε διαφήμιση."
+    "feat4Desc": "Τίποτα από όσα ανοίγετε δεν φεύγει από το τηλέφωνο — χωρίς διακομιστή και χωρίς λογαριασμό. Η αγορά αφαιρεί και κάθε διαφήμιση.",
+    "previewTitle": "Προεπισκόπηση",
+    "previewDesc": "Δες το αποτέλεσμα πριν το αποθηκεύσεις στη συλλογή σου.",
+    "previewSaveButton": "Αποθήκευση στις Φωτογραφίες",
+    "fineTuneTrim": "Μικρορύθμιση άκρων",
+    "trimStartLabel": "Αρχή",
+    "trimEndLabel": "Τέλος",
+    "previewUpdating": "Ενημέρωση προεπισκόπησης..."
   }
 } as const;
 

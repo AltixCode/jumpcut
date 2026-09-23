@@ -4,10 +4,16 @@ import {
   SENSITIVITY,
   WINDOW_SECONDS,
   useCutStore,
-} from '../useCutStore';
-import { DEFAULTS } from '../../engine/silenceDetector';
+} from "../useCutStore";
+import { DEFAULTS } from "../../engine/silenceDetector";
 
-const SOURCE = { uri: 'file:///take.mov', width: 1080, height: 1920, duration: 10, hasAudio: true };
+const SOURCE = {
+  uri: "file:///take.mov",
+  width: 1080,
+  height: 1920,
+  duration: 10,
+  hasAudio: true,
+};
 
 /** A profile with speech, then a two-second silence, then speech again. */
 const profileWithGap = (seconds: number, gapFrom: number, gapTo: number) => {
@@ -26,8 +32,8 @@ beforeEach(() => {
   useCutStore.getState().setOptions(DEFAULT_SENSITIVITY);
 });
 
-describe('useCutStore', () => {
-  it('finds the silence and keeps what is around it', () => {
+describe("useCutStore", () => {
+  it("finds the silence and keeps what is around it", () => {
     useCutStore.getState().setSource(SOURCE);
     useCutStore.getState().analyse(profileWithGap(10, 4, 6));
     const { silences, keep, savedSeconds } = useCutStore.getState();
@@ -36,15 +42,15 @@ describe('useCutStore', () => {
     expect(savedSeconds).toBeGreaterThan(1.5);
   });
 
-  it('clears the previous analysis when a new video is loaded', () => {
+  it("clears the previous analysis when a new video is loaded", () => {
     useCutStore.getState().setSource(SOURCE);
     useCutStore.getState().analyse(profileWithGap(10, 4, 6));
-    useCutStore.getState().setSource({ ...SOURCE, uri: 'file:///other.mov' });
+    useCutStore.getState().setSource({ ...SOURCE, uri: "file:///other.mov" });
     expect(useCutStore.getState().keep).toEqual([]);
     expect(useCutStore.getState().savedSeconds).toBe(0);
   });
 
-  it('re-derives the segments when the threshold changes, without a new profile', () => {
+  it("re-derives the segments when the threshold changes, without a new profile", () => {
     useCutStore.getState().setSource(SOURCE);
     useCutStore.getState().analyse(profileWithGap(10, 4, 6));
     const before = useCutStore.getState().keep.length;
@@ -53,54 +59,120 @@ describe('useCutStore', () => {
     expect(useCutStore.getState().keep.length).not.toBe(before);
   });
 
-  it('keeps the options when there is nothing to re-derive from', () => {
+  it("keeps the options when there is nothing to re-derive from", () => {
     useCutStore.getState().setOptions({ thresholdDb: -25 });
     expect(useCutStore.getState().options.thresholdDb).toBe(-25);
     expect(useCutStore.getState().keep).toEqual([]);
   });
 
-  it('flags a video past the free duration, and stops flagging once unlocked', () => {
+  it("flags a video past the free duration, and stops flagging once unlocked", () => {
     useCutStore.getState().setSource({ ...SOURCE, duration: FREE_SECONDS + 1 });
     expect(useCutStore.getState().overFreeLimit()).toBe(true);
     useCutStore.getState().setIsPro(true);
     expect(useCutStore.getState().overFreeLimit()).toBe(false);
   });
 
-  it('truncates the free export at the limit rather than dropping segments', () => {
-    useCutStore.getState().setSource({ ...SOURCE, duration: FREE_SECONDS + 30 });
+  it("truncates the free export at the limit rather than dropping segments", () => {
+    useCutStore
+      .getState()
+      .setSource({ ...SOURCE, duration: FREE_SECONDS + 30 });
     useCutStore.getState().analyse(profileWithGap(FREE_SECONDS + 30, 4, 6));
     const exportable = useCutStore.getState().exportableKeep();
     expect(exportable.length).toBeGreaterThan(0);
     // A free export is the opening minute, cut -- not nothing, and not a
     // segment that runs past what was paid for.
-    expect(Math.max(...exportable.map((s) => s.end))).toBeLessThanOrEqual(FREE_SECONDS);
+    expect(Math.max(...exportable.map((s) => s.end))).toBeLessThanOrEqual(
+      FREE_SECONDS,
+    );
   });
 
-  it('exports every segment once unlocked', () => {
-    useCutStore.getState().setSource({ ...SOURCE, duration: FREE_SECONDS + 30 });
+  it("exports every segment once unlocked", () => {
+    useCutStore
+      .getState()
+      .setSource({ ...SOURCE, duration: FREE_SECONDS + 30 });
     useCutStore.getState().analyse(profileWithGap(FREE_SECONDS + 30, 4, 6));
     useCutStore.getState().setIsPro(true);
-    expect(useCutStore.getState().exportableKeep()).toEqual(useCutStore.getState().keep);
+    expect(useCutStore.getState().exportableKeep()).toEqual(
+      useCutStore.getState().keep,
+    );
   });
 
-  it('reports nothing to keep for a clip that is silent throughout', () => {
+  it("reports nothing to keep for a clip that is silent throughout", () => {
     useCutStore.getState().setSource(SOURCE);
-    useCutStore.getState().analyse(new Float32Array(Math.round(10 / WINDOW_SECONDS)));
+    useCutStore
+      .getState()
+      .analyse(new Float32Array(Math.round(10 / WINDOW_SECONDS)));
     expect(useCutStore.getState().keep).toEqual([]);
   });
 
-  it('starts on a sensitivity the UI can show as chosen', () => {
+  it("starts on a sensitivity the UI can show as chosen", () => {
     // An empty options object would leave every preset unselected, and the
     // screen would show no setting while using one.
     const { options } = useCutStore.getState();
     expect(options.thresholdDb).toBe(DEFAULT_SENSITIVITY.thresholdDb);
-    expect(SENSITIVITY.some((preset) => preset.thresholdDb === options.thresholdDb)).toBe(true);
+    expect(
+      SENSITIVITY.some((preset) => preset.thresholdDb === options.thresholdDb),
+    ).toBe(true);
   });
 
-  it('keeps the default preset equal to the detector\'s own defaults', () => {
+  it("keeps the default preset equal to the detector's own defaults", () => {
     // Two copies of the same numbers drift, and the drift is invisible: the
     // app would analyse with one threshold and display another.
     expect(DEFAULT_SENSITIVITY.thresholdDb).toBe(DEFAULTS.thresholdDb);
-    expect(DEFAULT_SENSITIVITY.minSilenceSeconds).toBe(DEFAULTS.minSilenceSeconds);
+    expect(DEFAULT_SENSITIVITY.minSilenceSeconds).toBe(
+      DEFAULTS.minSilenceSeconds,
+    );
+  });
+
+  describe("the preview step before saving", () => {
+    beforeEach(() => {
+      useCutStore.getState().setSource(SOURCE);
+      useCutStore.getState().analyse(profileWithGap(10, 4, 6));
+    });
+
+    it('lands on "previewing" once a cut result comes back, not "idle"', () => {
+      const segments = useCutStore.getState().exportableKeep();
+      useCutStore.getState().setResult("file:///cut.mov", 8, segments);
+      expect(useCutStore.getState().stage).toBe("previewing");
+      expect(useCutStore.getState().outputUri).toBe("file:///cut.mov");
+      expect(useCutStore.getState().outputSegments).toEqual(segments);
+    });
+
+    it("discarding the preview clears the output but keeps the analysis", () => {
+      const segments = useCutStore.getState().exportableKeep();
+      useCutStore.getState().setResult("file:///cut.mov", 8, segments);
+      useCutStore.getState().discardPreview();
+      const state = useCutStore.getState();
+      expect(state.stage).toBe("idle");
+      expect(state.outputUri).toBeNull();
+      expect(state.outputSegments).toBeNull();
+      // The silence analysis survives, so the screen the user lands back on
+      // still shows what JumpCut found rather than an empty state.
+      expect(state.keep.length).toBeGreaterThan(0);
+    });
+
+    it("nudging a trim edge adjusts the previewed segments without a native re-cut", () => {
+      const segments = useCutStore.getState().exportableKeep();
+      useCutStore.getState().setResult("file:///cut.mov", 8, segments);
+      useCutStore.getState().nudgeTrim("start", 0.5);
+      const adjusted = useCutStore.getState().outputSegments;
+      expect(adjusted).not.toBeNull();
+      expect(adjusted![0].start).toBeCloseTo(segments[0].start + 0.5, 6);
+    });
+
+    it("nudges accumulate on top of the previous adjustment", () => {
+      const segments = useCutStore.getState().exportableKeep();
+      useCutStore.getState().setResult("file:///cut.mov", 8, segments);
+      useCutStore.getState().nudgeTrim("start", 0.2);
+      useCutStore.getState().nudgeTrim("start", 0.2);
+      const adjusted = useCutStore.getState().outputSegments;
+      expect(adjusted![0].start).toBeCloseTo(segments[0].start + 0.4, 6);
+    });
+
+    it("does nothing when nudged with no source loaded", () => {
+      useCutStore.getState().reset();
+      useCutStore.getState().nudgeTrim("start", 0.5);
+      expect(useCutStore.getState().outputSegments).toBeNull();
+    });
   });
 });

@@ -1,15 +1,15 @@
-import React, { useEffect } from 'react';
-import { Stack, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { LogBox, TouchableOpacity, Text } from 'react-native';
-import { Crown } from 'lucide-react-native';
-import { initPurchases, checkIsPro } from '../src/services/purchases';
-import { initializeAds } from '../src/services/ads';
-import { useAdsStore } from '../src/store/adsStore';
-import { useCutStore } from '../src/store/useCutStore';
-import { useTheme } from '../src/theme/useTheme';
-import { t } from '../src/i18n';
-import '../global.css';
+import React, { useEffect } from "react";
+import { Stack, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { LogBox, TouchableOpacity, Text } from "react-native";
+import { Crown } from "lucide-react-native";
+import { initPurchases, checkIsPro } from "../src/services/purchases";
+import { initializeAds } from "../src/services/ads";
+import { useAdsStore } from "../src/store/adsStore";
+import { useCutStore } from "../src/store/useCutStore";
+import { useTheme } from "../src/theme/useTheme";
+import { t } from "../src/i18n";
+import "../global.css";
 
 /**
  * No LogBox toast in a capture build.
@@ -25,7 +25,7 @@ import '../global.css';
  * Gated on `__DEV__` and the capture flag together, so an ordinary debug build
  * keeps every warning it should have, and a release build never reaches it.
  */
-if (__DEV__ && process.env.EXPO_PUBLIC_CAPTURE_MODE === '1') {
+if (__DEV__ && process.env.EXPO_PUBLIC_CAPTURE_MODE === "1") {
   LogBox.ignoreAllLogs(true);
 }
 
@@ -53,7 +53,7 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.headerBackground },
           headerTintColor: theme.headerTintColor,
-          headerTitleStyle: { fontWeight: '700' },
+          headerTitleStyle: { fontWeight: "700" },
           contentStyle: { backgroundColor: theme.background },
           headerRight: () =>
             // No background or border of our own: iOS 26+ already draws a
@@ -61,21 +61,27 @@ export default function RootLayout() {
             // visible double border.
             !isPro ? (
               <TouchableOpacity
-                onPress={() => router.push('/paywall')}
+                onPress={() => router.push("/paywall")}
                 accessibilityRole="button"
-                accessibilityLabel={t('paywallTitle')}
+                accessibilityLabel={t("paywallTitle")}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 className="flex-row items-center px-1 py-1"
               >
                 <Crown size={15} color={theme.warning} />
-                <Text style={{ color: theme.warning }} className="ml-1.5 text-xs font-bold">
-                  {t('proBadge')}
+                <Text
+                  style={{ color: theme.warning }}
+                  className="ml-1.5 text-xs font-bold"
+                >
+                  {t("proBadge")}
                 </Text>
               </TouchableOpacity>
             ) : null,
         }}
       >
-        <Stack.Screen name="index" options={{ title: t('appName'), headerTitleAlign: 'left' }} />
+        <Stack.Screen
+          name="index"
+          options={{ title: t("appName"), headerTitleAlign: "left" }}
+        />
         <Stack.Screen
           name="paywall"
           options={{
@@ -87,10 +93,21 @@ export default function RootLayout() {
             // close button calls `router.back()`, so nothing is lost with the
             // header gone.
             headerShown: false,
-            presentation: 'modal',
+            presentation: "modal",
             // Inherited from screenOptions otherwise, which lets the paywall
             // push another copy of itself without limit.
             headerRight: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="preview"
+          options={{
+            // Same reasoning as the paywall: the screen draws its own title
+            // row, and a navigation header on top of it doubles up.
+            headerShown: false,
+            presentation: "modal",
+            headerRight: () => null,
+            gestureEnabled: false,
           }}
         />
       </Stack>

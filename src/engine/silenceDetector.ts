@@ -114,10 +114,15 @@ export const toKeepSegments = (
   const speech: Interval[] = [];
   let cursor = 0;
   for (const silence of ordered) {
-    if (silence.start > cursor) speech.push({ start: cursor, end: Math.min(silence.start, durationSeconds) });
+    if (silence.start > cursor)
+      speech.push({
+        start: cursor,
+        end: Math.min(silence.start, durationSeconds),
+      });
     cursor = Math.max(cursor, silence.end);
   }
-  if (cursor < durationSeconds) speech.push({ start: cursor, end: durationSeconds });
+  if (cursor < durationSeconds)
+    speech.push({ start: cursor, end: durationSeconds });
 
   const padded = speech
     .map((s) => ({
@@ -129,7 +134,8 @@ export const toKeepSegments = (
   const merged: Interval[] = [];
   for (const segment of padded) {
     const last = merged[merged.length - 1];
-    if (last && segment.start <= last.end) last.end = Math.max(last.end, segment.end);
+    if (last && segment.start <= last.end)
+      last.end = Math.max(last.end, segment.end);
     else merged.push({ ...segment });
   }
   return merged;
@@ -137,4 +143,49 @@ export const toKeepSegments = (
 
 /** Seconds removed by keeping only these segments. */
 export const timeSaved = (keep: Interval[], durationSeconds: number): number =>
-  Math.max(0, durationSeconds - keep.reduce((total, s) => total + (s.end - s.start), 0));
+  Math.max(
+    0,
+    durationSeconds - keep.reduce((total, s) => total + (s.end - s.start), 0),
+  );
+
+/**
+ * Nudges the very first or very last cut point of the final export by a
+ * small amount, on top of whatever silence detection already produced.
+ *
+ * This is the preview screen's fine-edit control: it does not re-run
+ * detection or touch any segment in the middle, only the one edge of the
+ * whole clip the user is looking at. `deltaSeconds` is added directly to
+ * that edge's timestamp -- positive trims into the clip, negative restores
+ * toward the original bound -- and is always clamped so the edited segment
+ * never inverts or drops below the minimum a cut is allowed to be.
+ */
+export const adjustEdgeTrim = (
+  segments: Interval[],
+  edge: "start" | "end",
+  deltaSeconds: number,
+  durationSeconds: number,
+  options: DetectOptions = {},
+): Interval[] => {
+  if (!segments.length) return [];
+  const { minSegmentSeconds } = { ...DEFAULTS, ...options };
+  const result = segments.map((s) => ({ ...s }));
+
+  if (edge === "start") {
+    const first = result[0];
+    const maxStart = Math.max(0, atMicros(first.end - minSegmentSeconds));
+    first.start = atMicros(
+      Math.min(Math.max(0, first.start + deltaSeconds), maxStart),
+    );
+  } else {
+    const last = result[result.length - 1];
+    const minEnd = Math.min(
+      durationSeconds,
+      atMicros(last.start + minSegmentSeconds),
+    );
+    last.end = atMicros(
+      Math.min(durationSeconds, Math.max(minEnd, last.end + deltaSeconds)),
+    );
+  }
+
+  return result;
+};
