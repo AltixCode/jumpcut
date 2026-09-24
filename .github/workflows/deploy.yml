@@ -70,6 +70,20 @@ jobs:
       app_build: ${{ steps.version.outputs.app_build }}
       tag_name: ${{ steps.version.outputs.tag_name }}
     steps:
+      - name: Refuse to build if the host is short of disk
+        # The Android job has had this guard for a while; the iOS job never
+        # did, even though it runs on the same three Mac runners that build
+        # everything else and Xcode's own DerivedData/archive output is not
+        # small. Same POSIX -Pk form as the Android guard -- see its comment
+        # for why -B/GNU-only flags don't work here.
+        run: |
+          free_gb=$(df -Pk / | awk 'NR==2 {print int($4/1024/1024)}')
+          echo "free on this runner: ${free_gb}G"
+          if [ "${free_gb:-0}" -lt 15 ]; then
+            echo "::error::only ${free_gb}G free — refusing to build rather than risk the host"
+            exit 1
+          fi
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -337,6 +351,28 @@ jobs:
           name: ios-release-artifacts
           path: build/output/*.ipa
           if-no-files-found: ignore
+
+      - name: Release the disk this build took
+        # The Android job has cleaned up after itself for a while; the iOS
+        # job never did, on the same three Mac runners that build Android's
+        # overflow and everything else. node_modules is ~1 GB, `ios/Pods` is
+        # a full copy of every native dependency's source, and
+        # `build/DerivedData` (Xcode's own build cache, scoped here via
+        # `-derivedDataPath` rather than left at its ~/Library/Developer
+        # default) plus the xcarchive and exported IPA can be several GB more
+        # -- none of it reused by a later run, all of it per-workspace like
+        # Android's node_modules. `if: always()` for the same reason as
+        # Android's: a build that fails partway is exactly the one that
+        # leaves the biggest mess.
+        #
+        # Xcode.app itself, the iOS/watchOS SDKs, and CocoaPods' own trunk
+        # Specs repo (~/.cocoapods/repos) are NOT touched here -- shared
+        # across every app and every run, same reasoning as the Android SDK
+        # install in the other job's cleanup.
+        if: always()
+        run: |
+          rm -rf node_modules ios android build || true
+          echo "free after cleanup: $(df -Pk / | awk 'NR==2 {print int($4/1024/1024)}')G"
 
   build-android:
     name: Android Build & Package
@@ -639,7 +675,7 @@ jobs:
         if: always()
         run: |
           ./android/gradlew --stop >/dev/null 2>&1 || true
-          rm -rf node_modules android/app/build android/build build/output "$GRADLE_USER_HOME" || true
+          rm -rf node_modules ios android build "$GRADLE_USER_HOME" || true
           echo "free after cleanup: $(df -Pk / | awk 'NR==2 {print int($4/1024/1024)}')G"
 
   publish-release:
