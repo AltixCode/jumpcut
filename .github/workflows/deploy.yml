@@ -41,7 +41,14 @@ permissions:
 
 concurrency:
   group: release-${{ github.repository }}
-  cancel-in-progress: false
+  # A tag build must never be interrupted; an ad-hoc push/dispatch may be --
+  # cancelling a superseded run automatically is what keeps a burst of
+  # pushes (or agent-driven retriggers) from piling up hundreds of stale
+  # queued runs that never do anything but sit there until a runner works
+  # through them one at a time. Found 2026-09-24 with 500+ queued runs
+  # across the fleet, most of them long since superseded by a later push
+  # to the same repo.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 
 # The AdMob and RevenueCat identifiers the build bakes in. Absent, the app falls back to
