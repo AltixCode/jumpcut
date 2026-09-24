@@ -569,13 +569,13 @@ jobs:
           # worthless in CI anyway -- nothing reuses it -- and its disappearance
           # is reported as a Gradle bug rather than as memory pressure.
           echo "Building Release APK..."
-          ./gradlew assembleRelease --stacktrace --no-daemon --gradle-user-home "$GRADLE_USER_HOME" --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
+          ./gradlew assembleRelease --stacktrace --no-daemon --gradle-user-home "$GRADLE_USER_HOME" --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=1536m" \
             "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
             "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
             "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
             "-Pandroid.injected.signing.key.password=$KEY_PASSWORD"
           echo "Building Release AAB Bundle..."
-          ./gradlew bundleRelease --stacktrace --no-daemon --gradle-user-home "$GRADLE_USER_HOME" --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
+          ./gradlew bundleRelease --stacktrace --no-daemon --gradle-user-home "$GRADLE_USER_HOME" --max-workers=2 -Porg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=1536m" \
             "-Pandroid.injected.signing.store.file=$KEYSTORE_PATH" \
             "-Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD" \
             "-Pandroid.injected.signing.key.alias=$KEY_ALIAS" \
