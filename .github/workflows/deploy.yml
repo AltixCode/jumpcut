@@ -639,7 +639,7 @@ jobs:
         if: always()
         run: |
           ./android/gradlew --stop >/dev/null 2>&1 || true
-          rm -rf node_modules android/app/build android/build build/output || true
+          rm -rf node_modules android/app/build android/build build/output "$GRADLE_USER_HOME" || true
           echo "free after cleanup: $(df -Pk / | awk 'NR==2 {print int($4/1024/1024)}')G"
 
   publish-release:
