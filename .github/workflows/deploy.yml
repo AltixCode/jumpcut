@@ -336,6 +336,38 @@ jobs:
             --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_API_KEY_ISSUER"
 
+      - name: Auto-add build to TestFlight Internal Testers
+        # ASC's own "Automatic distribution" toggle (hasAccessToAllBuilds) is
+        # read-only after a beta group is created -- PATCHing it returns
+        # 409 ENTITY_ERROR.ATTRIBUTE.NOT_ALLOWED. Apple only sets it true on
+        # an app's implicit default group; any other internal group (including
+        # ones this portfolio created) is permanently manual-distribution.
+        # Found 2026-09-25: every app's upload was succeeding and Apple was
+        # processing it (VALID), the build just never reached internal
+        # testers because nothing ever attached it to the group. This step
+        # does that attachment itself, right after every successful upload,
+        # matched by isInternalGroup (not by the group's name -- that varies
+        # across apps) so a rename never breaks it. The script is base64'd
+        # rather than a heredoc because a heredoc terminator has to sit at
+        # column 0, which a YAML block-scalar step body can't do without
+        # ending the block scalar early.
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.submit_to_stores == true) || vars.ENABLE_STORE_UPLOADS == 'true' }}
+        continue-on-error: true
+        env:
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER }}
+          APP_BUILD: ${{ steps.version.outputs.app_build }}
+        run: |
+          BUNDLE_ID=$(grep -ohE "com\.[a-zA-Z0-9]+\.[a-zA-Z0-9_]+" app.config.ts app.json 2>/dev/null | head -1)
+          if [ -z "$BUNDLE_ID" ]; then
+            echo "::warning::Could not determine bundle id; skipping TestFlight group link"
+            exit 0
+          fi
+          pip3 install --quiet --user pyjwt cryptography 2>&1 | tail -5
+          echo "aW1wb3J0IHN5cywgb3MsIHRpbWUsIGpzb24sIHVybGxpYi5yZXF1ZXN0CgpCVU5ETEVfSUQsIEFQUF9CVUlMRCA9IHN5cy5hcmd2WzFdLCBzeXMuYXJndlsyXQprZXlfaWQgPSBvcy5lbnZpcm9uWyJBUFBfU1RPUkVfQ09OTkVDVF9BUElfS0VZX0lEIl0KaXNzdWVyX2lkID0gb3MuZW52aXJvblsiQVBQX1NUT1JFX0NPTk5FQ1RfQVBJX0tFWV9JU1NVRVIiXQpwcml2YXRlX2tleSA9IG9zLmVudmlyb25bIkFQUF9TVE9SRV9DT05ORUNUX0FQSV9LRVlfQ09OVEVOVCJdCkJBU0UgPSAiaHR0cHM6Ly9hcGkuYXBwc3RvcmVjb25uZWN0LmFwcGxlLmNvbS92MSIKCmltcG9ydCBqd3QKCmRlZiB0b2tlbigpOgogICAgbm93ID0gaW50KHRpbWUudGltZSgpKQogICAgcGF5bG9hZCA9IHsiaXNzIjogaXNzdWVyX2lkLCAiaWF0Ijogbm93LCAiZXhwIjogbm93ICsgMTIwMCwgImF1ZCI6ICJhcHBzdG9yZWNvbm5lY3QtdjEifQogICAgcmV0dXJuIGp3dC5lbmNvZGUocGF5bG9hZCwgcHJpdmF0ZV9rZXksIGFsZ29yaXRobT0iRVMyNTYiLCBoZWFkZXJzPXsia2lkIjoga2V5X2lkLCAidHlwIjogIkpXVCJ9KQoKZGVmIGFwaShtZXRob2QsIHVybCwgYm9keT1Ob25lKToKICAgIGRhdGEgPSBqc29uLmR1bXBzKGJvZHkpLmVuY29kZSgpIGlmIGJvZHkgaXMgbm90IE5vbmUgZWxzZSBOb25lCiAgICByZXEgPSB1cmxsaWIucmVxdWVzdC5SZXF1ZXN0KHVybCwgZGF0YT1kYXRhLCBtZXRob2Q9bWV0aG9kLCBoZWFkZXJzPXsKICAgICAgICAiQXV0aG9yaXphdGlvbiI6IGYiQmVhcmVyIHt0b2tlbigpfSIsCiAgICAgICAgIkNvbnRlbnQtVHlwZSI6ICJhcHBsaWNhdGlvbi9qc29uIiwKICAgIH0pCiAgICB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4ocmVxKSBhcyByZXNwOgogICAgICAgIHJhdyA9IHJlc3AucmVhZCgpLmRlY29kZSgpCiAgICAgICAgcmV0dXJuIGpzb24ubG9hZHMocmF3KSBpZiByYXcgZWxzZSB7fQoKdHJ5OgogICAgYWQgPSBhcGkoIkdFVCIsIGYie0JBU0V9L2FwcHM/ZmlsdGVyW2J1bmRsZUlkXT17QlVORExFX0lEfSIpCiAgICBhcHBzID0gYWQuZ2V0KCJkYXRhIiwgW10pCiAgICBpZiBub3QgYXBwczoKICAgICAgICBwcmludChmIjo6d2FybmluZzo6Tm8gQVNDIGFwcCBmb3VuZCBmb3IgYnVuZGxlIGlkIHtCVU5ETEVfSUR9IikKICAgICAgICBzeXMuZXhpdCgwKQogICAgYXBwX2lkID0gYXBwc1swXVsiaWQiXQoKICAgIGdkID0gYXBpKCJHRVQiLCBmIntCQVNFfS9hcHBzL3thcHBfaWR9L2JldGFHcm91cHMiKQogICAgaW50ZXJuYWwgPSBbZyBmb3IgZyBpbiBnZC5nZXQoImRhdGEiLCBbXSkgaWYgZ1siYXR0cmlidXRlcyJdWyJpc0ludGVybmFsR3JvdXAiXV0KICAgIGlmIG5vdCBpbnRlcm5hbDoKICAgICAgICBwcmludCgiOjp3YXJuaW5nOjpObyBpbnRlcm5hbCBUZXN0RmxpZ2h0IGdyb3VwIGZvdW5kIikKICAgICAgICBzeXMuZXhpdCgwKQogICAgZ3JvdXBfaWQgPSBpbnRlcm5hbFswXVsiaWQiXQoKICAgIGJkID0gYXBpKCJHRVQiLCBmIntCQVNFfS9hcHBzL3thcHBfaWR9L2J1aWxkcz9saW1pdD0yMDAiKQogICAgbWF0Y2ggPSBbYiBmb3IgYiBpbiBiZC5nZXQoImRhdGEiLCBbXSkgaWYgYlsiYXR0cmlidXRlcyJdWyJ2ZXJzaW9uIl0gPT0gc3RyKEFQUF9CVUlMRCldCiAgICBpZiBub3QgbWF0Y2g6CiAgICAgICAgcHJpbnQoZiI6Ondhcm5pbmc6Ok5vIGJ1aWxkIGZvdW5kIHdpdGggYnVpbGROdW1iZXI9e0FQUF9CVUlMRH0gKHN0aWxsIHByb2Nlc3Npbmc/KSIpCiAgICAgICAgc3lzLmV4aXQoMCkKICAgIGJ1aWxkX2lkID0gbWF0Y2hbMF1bImlkIl0KCiAgICBleGlzdGluZyA9IGFwaSgiR0VUIiwgZiJ7QkFTRX0vYmV0YUdyb3Vwcy97Z3JvdXBfaWR9L2J1aWxkcz9saW1pdD01MCIpCiAgICBpZiBidWlsZF9pZCBpbiB7YlsiaWQiXSBmb3IgYiBpbiBleGlzdGluZy5nZXQoImRhdGEiLCBbXSl9OgogICAgICAgIHByaW50KGYiQnVpbGQge0FQUF9CVUlMRH0gYWxyZWFkeSBsaW5rZWQgdG8gaW50ZXJuYWwgdGVzdGVycyIpCiAgICAgICAgc3lzLmV4aXQoMCkKCiAgICBhcGkoIlBPU1QiLCBmIntCQVNFfS9iZXRhR3JvdXBzL3tncm91cF9pZH0vcmVsYXRpb25zaGlwcy9idWlsZHMiLCB7CiAgICAgICAgImRhdGEiOiBbeyJ0eXBlIjogImJ1aWxkcyIsICJpZCI6IGJ1aWxkX2lkfV0KICAgIH0pCiAgICBwcmludChmIkxpbmtlZCBidWlsZCB7QVBQX0JVSUxEfSB0byBpbnRlcm5hbCB0ZXN0ZXJzIGdyb3VwICd7aW50ZXJuYWxbMF1bJ2F0dHJpYnV0ZXMnXVsnbmFtZSddfSciKQpleGNlcHQgRXhjZXB0aW9uIGFzIGU6CiAgICBwcmludChmIjo6d2FybmluZzo6VGVzdEZsaWdodCBhdXRvLWxpbmsgZmFpbGVkOiB7ZX0iKQo=" | base64 -d > "$RUNNER_TEMP/tf_autolink.py"
+          python3 "$RUNNER_TEMP/tf_autolink.py" "$BUNDLE_ID" "$APP_BUILD"
+
       - name: Stash iOS Artifacts
         if: github.server_url == 'https://github.com'
         # A stash failure must not fail the release.
