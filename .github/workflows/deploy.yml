@@ -221,7 +221,7 @@ jobs:
                      -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security \
                 && security set-key-partition-list -S apple-tool:,apple:,codesign: \
                      -s -k "$SIGNING_KEYCHAIN_PW" "$SIGNING_KEYCHAIN" >/dev/null \
-                && security list-keychains -d user -s "$SIGNING_KEYCHAIN" login.keychain-db
+                && security list-keychains -d user -s "$SIGNING_KEYCHAIN"
               then
                 echo "SIGNING_KEYCHAIN=$SIGNING_KEYCHAIN" >> "$GITHUB_ENV"
                 P12_SIGNING_OK=1
