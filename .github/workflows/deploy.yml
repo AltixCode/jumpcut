@@ -219,6 +219,29 @@ jobs:
                 && security unlock-keychain -p "$SIGNING_KEYCHAIN_PW" "$SIGNING_KEYCHAIN" \
                 && security import "$RUNNER_TEMP/signing-cert.p12" -k "$SIGNING_KEYCHAIN" \
                      -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security \
+                && { \
+                     # "unable to build chain to self-signed root" + errSecInternalComponent
+                     # on a CocoaPods embed-frameworks re-sign step (any Mac, app-composition
+                     # dependent, not machine-dependent -- confirmed via job logs on two
+                     # different Macs) means the ephemeral keychain has the leaf identity but
+                     # not Apple's WWDR intermediate that issued it. These are public certs,
+                     # not secrets; importing every current generation is harmless (no private
+                     # key, so it can never become an ambiguous signing identity) and each
+                     # fetch is independently best-effort so a network hiccup here degrades to
+                     # "no different from before," not a build failure.
+                     for wwdr_url in \
+                       https://www.apple.com/certificateauthority/AppleWWDRCAG2.cer \
+                       https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer \
+                       https://www.apple.com/certificateauthority/AppleWWDRCAG4.cer \
+                       https://www.apple.com/certificateauthority/AppleWWDRCAG5.cer \
+                       https://www.apple.com/certificateauthority/AppleWWDRCAG6.cer \
+                     ; do
+                       curl -fsSL "$wwdr_url" -o "$RUNNER_TEMP/wwdr.cer" 2>/dev/null \
+                         && security import "$RUNNER_TEMP/wwdr.cer" -k "$SIGNING_KEYCHAIN" \
+                              -T /usr/bin/codesign -T /usr/bin/security 2>/dev/null
+                     done
+                     rm -f "$RUNNER_TEMP/wwdr.cer"
+                     true; } \
                 && security set-key-partition-list -S apple-tool:,apple:,codesign: \
                      -s -k "$SIGNING_KEYCHAIN_PW" "$SIGNING_KEYCHAIN" >/dev/null \
                 && security list-keychains -d user -s "$SIGNING_KEYCHAIN"
