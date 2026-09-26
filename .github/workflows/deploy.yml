@@ -219,20 +219,6 @@ jobs:
                 && security unlock-keychain -p "$SIGNING_KEYCHAIN_PW" "$SIGNING_KEYCHAIN" \
                 && security import "$RUNNER_TEMP/signing-cert.p12" -k "$SIGNING_KEYCHAIN" \
                      -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security \
-                && { \
-                     # The shared .p12 carries an Apple Development identity alongside the
-                     # Distribution one it's actually for. The main archive step forces
-                     # DEVELOPMENT_TEAM/CODE_SIGN_STYLE=Automatic so it always resolves
-                     # Distribution correctly, but CocoaPods' own [CP] Embed Pods Frameworks
-                     # script phase does its own identity lookup and can land on whichever
-                     # identity it finds first -- on a keychain holding both, that silently
-                     # picked Development and failed archiving with "unable to build chain
-                     # to self-signed root". Deleting every Development identity right after
-                     # import leaves only Distribution, so there is nothing left to pick
-                     # wrong.
-                     security find-identity -v -p codesigning "$SIGNING_KEYCHAIN" 2>/dev/null \
-                     | grep -oE '"[^"]*Development[^"]*"' | tr -d '"' \
-                     | while IFS= read -r cn; do security delete-identity -c "$cn" "$SIGNING_KEYCHAIN" 2>/dev/null || true; done; true; } \
                 && security set-key-partition-list -S apple-tool:,apple:,codesign: \
                      -s -k "$SIGNING_KEYCHAIN_PW" "$SIGNING_KEYCHAIN" >/dev/null \
                 && security list-keychains -d user -s "$SIGNING_KEYCHAIN"
@@ -278,6 +264,7 @@ jobs:
               -authenticationKeyPath "$AUTH_KEY" \
               -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
               -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER" \
+              CODE_SIGN_IDENTITY="Apple Distribution" \
               COMPILER_INDEX_STORE_ENABLE=NO \
               DEVELOPMENT_TEAM="8Q8Y559285"
           else
