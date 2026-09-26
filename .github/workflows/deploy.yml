@@ -264,7 +264,6 @@ jobs:
               -authenticationKeyPath "$AUTH_KEY" \
               -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
               -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER" \
-              CODE_SIGN_IDENTITY="Apple Distribution" \
               COMPILER_INDEX_STORE_ENABLE=NO \
               DEVELOPMENT_TEAM="8Q8Y559285"
           else
