@@ -922,3 +922,4 @@ jobs:
             git tag "$TAG_NAME"
             git push origin "$TAG_NAME"
           fi
+# trigger a fresh push-based run to sidestep a stuck workflow_dispatch run
