@@ -255,10 +255,16 @@ export default function PreviewScreen() {
             }}
           >
             <Text
-              className="text-xs font-semibold tracking-widest mb-3"
+              className="text-xs font-semibold tracking-widest mb-1"
               style={{ color: theme.textMuted }}
             >
               {t("fineTuneTrim")}
+            </Text>
+            <Text
+              className="text-xs mb-3"
+              style={{ color: theme.textSecondary }}
+            >
+              {t("trimStepHint", { seconds: TRIM_STEP })}
             </Text>
             {[
               { edge: "start" as const, label: t("trimStartLabel") },
