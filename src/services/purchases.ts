@@ -124,20 +124,35 @@ const capturePriceFallback = (): PurchasesPackage | null => {
   } as unknown as PurchasesPackage;
 };
 
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * A fresh offering fetch immediately after `initPurchases()` resolves can still come back with
+ * the package's underlying StoreKit product unresolved -- RevenueCat omits a package from
+ * `availablePackages` (and `current.lifetime`) whenever the store hasn't returned its product
+ * yet, which is indistinguishable from "this app has no lifetime product". Testers reported
+ * this as the paywall's purchase button simply not existing right after opening the app. These
+ * are retry backoffs, not a timeout: keep trying before falling back.
+ */
+const OFFERING_RETRY_DELAYS_MS = [500, 1000, 2000];
+
 export const getLifetimePackage =
   async (): Promise<PurchasesPackage | null> => {
     if (!(await initPurchases())) return capturePriceFallback();
-    try {
-      const offerings = await Purchases.getOfferings();
-      return (
-        offerings.current?.lifetime ??
-        offerings.current?.availablePackages?.[0] ??
-        null
-      );
-    } catch (error) {
-      console.warn("[Purchases] Could not load offerings:", error);
-      return capturePriceFallback();
+    for (const delay of [0, ...OFFERING_RETRY_DELAYS_MS]) {
+      if (delay) await sleep(delay);
+      try {
+        const offerings = await Purchases.getOfferings();
+        const pkg =
+          offerings.current?.lifetime ??
+          offerings.current?.availablePackages?.[0];
+        if (pkg) return pkg;
+      } catch (error) {
+        console.warn("[Purchases] Could not load offerings:", error);
+      }
     }
+    return capturePriceFallback();
   };
 
 export const purchaseLifetime = async (): Promise<PurchaseOutcome> => {
