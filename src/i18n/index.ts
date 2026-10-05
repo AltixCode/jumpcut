@@ -71,6 +71,9 @@ export const translations = {
     noSilenceTitle: "Nothing to Cut",
     noSilenceDesc:
       "JumpCut found no pauses long enough to remove. Try lowering the threshold.",
+    allSilentTitle: "Nothing to Keep",
+    allSilentDesc:
+      "This clip is silent all the way through, so there is no speech left to keep.",
     resultTitle: "What JumpCut Found",
     silenceCount: "{count} silences",
     silenceCount_one: "{count} silence",
@@ -180,6 +183,9 @@ export const translations = {
     noSilenceTitle: "Nada que cortar",
     noSilenceDesc:
       "JumpCut no encontró pausas lo bastante largas. Prueba a bajar el umbral.",
+    allSilentTitle: "Nada que conservar",
+    allSilentDesc:
+      "Este clip no tiene sonido, así que no hay ninguna voz que conservar.",
     resultTitle: "Lo que encontró JumpCut",
     silenceCount: "{count} silencios",
     silenceCount_one: "{count} silencio",
@@ -290,6 +296,9 @@ export const translations = {
     noSilenceTitle: "Rien à couper",
     noSilenceDesc:
       "JumpCut n'a trouvé aucune pause assez longue. Essayez d'abaisser le seuil.",
+    allSilentTitle: "Rien à conserver",
+    allSilentDesc:
+      "Ce clip est entièrement silencieux, il n’y a donc aucune parole à conserver.",
     resultTitle: "Ce que JumpCut a trouvé",
     silenceCount: "{count} silences",
     silenceCount_one: "{count} silence",
@@ -401,6 +410,9 @@ export const translations = {
     noSilenceTitle: "Nichts zu schneiden",
     noSilenceDesc:
       "JumpCut hat keine ausreichend langen Pausen gefunden. Versuch, die Schwelle zu senken.",
+    allSilentTitle: "Nichts zu behalten",
+    allSilentDesc:
+      "Dieser Clip ist komplett stumm, daher gibt es keine Sprache zu behalten.",
     resultTitle: "Was JumpCut gefunden hat",
     silenceCount: "{count} Stillen",
     silenceCount_one: "{count} Stille",
@@ -512,6 +524,9 @@ export const translations = {
     noSilenceTitle: "Нечего вырезать",
     noSilenceDesc:
       "JumpCut не нашёл достаточно длинных пауз. Попробуйте понизить порог.",
+    allSilentTitle: "Нечего сохранять",
+    allSilentDesc:
+      "Весь клип без звука, поэтому в нём нет речи, которую можно сохранить.",
     resultTitle: "Что нашёл JumpCut",
     silenceCount: "{count} пауз",
     silenceCount_one: "{count} пауза",
@@ -616,6 +631,8 @@ export const translations = {
     analyseFailed: "分析失败",
     noSilenceTitle: "没有可剪的内容",
     noSilenceDesc: "JumpCut 没找到足够长的停顿，试试调低阈值。",
+    allSilentTitle: "没有可保留的内容",
+    allSilentDesc: "此片段全程静音，因此没有可保留的语音。",
     resultTitle: "JumpCut 找到的结果",
     silenceCount: "{count} 处静音",
     silenceCount_one: "{count} 处静音",
@@ -719,6 +736,9 @@ export const translations = {
     noSilenceTitle: "カットするものがありません",
     noSilenceDesc:
       "十分な長さの間が見つかりませんでした。しきい値を下げてみてください。",
+    allSilentTitle: "残す部分がありません",
+    allSilentDesc:
+      "このクリップは最初から最後まで無音のため、残せる音声がありません。",
     resultTitle: "JumpCut が見つけたもの",
     silenceCount: "無音{count}か所",
     silenceCount_one: "無音{count}か所",
@@ -826,6 +846,9 @@ export const translations = {
     noSilenceTitle: "Nada para cortar",
     noSilenceDesc:
       "O JumpCut não achou pausas longas o bastante. Tente baixar o limiar.",
+    allSilentTitle: "Nada para manter",
+    allSilentDesc:
+      "Este clipe está totalmente silencioso, então não há nenhuma fala para manter.",
     resultTitle: "O que o JumpCut achou",
     silenceCount: "{count} silêncios",
     silenceCount_one: "{count} silêncio",
@@ -934,6 +957,8 @@ export const translations = {
     analyseFailed: "분석 실패",
     noSilenceTitle: "자를 것이 없습니다",
     noSilenceDesc: "충분히 긴 멈춤을 찾지 못했습니다. 임계값을 낮춰 보세요.",
+    allSilentTitle: "남길 내용이 없어요",
+    allSilentDesc: "이 클립은 처음부터 끝까지 무음이라 남길 음성이 없어요.",
     resultTitle: "JumpCut이 찾은 것",
     silenceCount: "무음 {count}곳",
     silenceCount_one: "무음 {count}곳",
@@ -1040,6 +1065,9 @@ export const translations = {
     noSilenceTitle: "Niente da tagliare",
     noSilenceDesc:
       "JumpCut non ha trovato pause abbastanza lunghe. Prova ad abbassare la soglia.",
+    allSilentTitle: "Nulla da conservare",
+    allSilentDesc:
+      "Questo clip è completamente silenzioso, quindi non c’è alcun parlato da conservare.",
     resultTitle: "Cosa ha trovato JumpCut",
     silenceCount: "{count} silenzi",
     silenceCount_one: "{count} silenzio",
@@ -1149,6 +1177,9 @@ export const translations = {
     noSilenceTitle: "Kesilecek bir şey yok",
     noSilenceDesc:
       "JumpCut yeterince uzun duraklama bulamadı. Eşiği düşürmeyi dene.",
+    allSilentTitle: "Saklanacak Bir Şey Yok",
+    allSilentDesc:
+      "Bu klibin tamamı sessiz, bu yüzden saklanacak bir konuşma yok.",
     resultTitle: "JumpCut ne buldu",
     silenceCount: "{count} sessizlik",
     silenceCount_one: "{count} sessizlik",
@@ -1255,6 +1286,8 @@ export const translations = {
     noSilenceTitle: "لا شيء لقصّه",
     noSilenceDesc:
       "لم يجد JumpCut وقفات طويلة بما يكفي لإزالتها. جرّب خفض الحد.",
+    allSilentTitle: "لا شيء للاحتفاظ به",
+    allSilentDesc: "هذا المقطع صامت بالكامل، لذا لا يوجد كلام للاحتفاظ به.",
     resultTitle: "ما وجده JumpCut",
     silenceCount: "{count} فترة صمت",
     silenceCount_one: "فترة صمت واحدة",
@@ -1360,6 +1393,9 @@ export const translations = {
     noSilenceTitle: "چیزی برای بریدن نیست",
     noSilenceDesc:
       "JumpCut مکثی به‌اندازهٔ کافی بلند پیدا نکرد. آستانه را پایین‌تر بیاورید.",
+    allSilentTitle: "چیزی برای نگه‌داشتن نیست",
+    allSilentDesc:
+      "این کلیپ کاملاً بی‌صداست، پس گفتاری برای نگه‌داشتن وجود ندارد.",
     resultTitle: "آنچه JumpCut پیدا کرد",
     silenceCount: "{count} سکوت",
     silenceCount_one: "{count} سکوت",
@@ -1468,6 +1504,9 @@ export const translations = {
     noSilenceTitle: "Τίποτα για κόψιμο",
     noSilenceDesc:
       "Το JumpCut δεν βρήκε αρκετά μεγάλες παύσεις. Δοκίμασε να χαμηλώσεις το κατώφλι.",
+    allSilentTitle: "Δεν υπάρχει κάτι να κρατηθεί",
+    allSilentDesc:
+      "Αυτό το κλιπ είναι εντελώς αθόρυβο, οπότε δεν υπάρχει ομιλία για να κρατηθεί.",
     resultTitle: "Τι βρήκε το JumpCut",
     silenceCount: "{count} σιωπές",
     silenceCount_one: "{count} σιωπή",

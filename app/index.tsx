@@ -123,8 +123,15 @@ export default function HomeScreen() {
         WINDOW_SECONDS,
       );
       analyse(profile);
-      if (!useCutStore.getState().silences.length) {
+      const { silences: foundSilences, keep: keptSegments } =
+        useCutStore.getState();
+      if (!foundSilences.length) {
         Alert.alert(t("noSilenceTitle"), t("noSilenceDesc"));
+      } else if (!keptSegments.length) {
+        // The whole clip is one long silence: distinct from "nothing to cut"
+        // above, and silently reverting to the idle screen left the user
+        // staring at an unchanged button with no idea the analysis ran.
+        Alert.alert(t("allSilentTitle"), t("allSilentDesc"));
       }
     } catch (error) {
       setStage("idle");
