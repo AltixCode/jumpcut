@@ -128,9 +128,15 @@ export default function HomeScreen() {
       }
     } catch (error) {
       setStage("idle");
+      // The native decoder's fallback message for an error it doesn't
+      // recognise itself (an empty or unlocalized NSError, as on an
+      // all-silent track) is not something to show a user as-is.
+      const reason = error instanceof Error ? error.message : String(error);
       Alert.alert(
         t("analyseFailed"),
-        error instanceof Error ? error.message : String(error),
+        reason && !/undefined/i.test(reason)
+          ? reason
+          : t("videoUnreadableDesc"),
       );
     } finally {
       setBusy(false);
